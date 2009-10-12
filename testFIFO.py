@@ -12,54 +12,37 @@ class TestFIFOProperties(TestCase):
     def testEmptySet(self):
         """ test That the empty flag is set right """
 
-        def test(re, we, empty, clk):
+        def test(re, we, empty, clk, rst_n):
+            rst_n.next = False
+            yield delay(2)
+            rst_n.next = True
+            yield delay(1)
             self.assertEqual(re,False)
             re.next = False
             we.next = False
             clk.next = True
-            yield delay(10) # posedge
             # empty at initialisation
-            self.assertEqual(empty, True) # 0
-            clk.next = False
-            yield delay(10)
-            we.next = True
-            clk.next = True
-            yield delay(10) #posedge
-            # not empty after write
-            self.assertEqual(empty, False) # 1
-            clk.next = False
-            yield delay(10)
-            clk.next = True
-            yield delay(10) #posedge
-            # still not empty
-            self.assertEqual(empty, False) # 2
-            clk.next = False
-            yield delay(10)
-            we.next = False
-            clk.next = True
-            yield delay(10) #posedge
-            self.assertEqual(empty, False) # 2
-            clk.next = False
-            yield delay(10)
-            self.assertEqual(empty, False)
-            clk.next = True
-            re.next = True
+            self.assertEqual(empty, True)
             yield delay(10) # posedge
-            self.assertEqual(empty, False) # 1
-            clk.next = False
-            yield delay(10)
-            clk.next = True
-            re.next = False
-            yield delay(10) #posedge
-            self.assertEqual(empty, False) # 1
-            clk.next = False
-            yield delay(10)
-            clk.next = True
-            re.next = True
-            yield delay(10)
-            self.assertEqual(empty, True) # 0
+
+            for i in range (8):
+                clk.next = False
+                yield delay(10)
+
+                we.next = (True, True, False, False, False, False, True, True)[i]
+                re.next = (False, False, False, True, False, True, False, False)[i]
+
+                if i == 7:
+                    rst_n.next = False
+                    yield delay(2)
+                    rst_n.next = True
+                    yield delay(1)
+                
+                self.assertEqual(empty, (True, False, False, False, False, False, True, True)[i])
+                clk.next = True
+                yield delay(10) #posedge
+                self.assertEqual(empty, (False, False, False, False, False, True, False, False)[i])                
             re.next = False;
-            
            
         dout_i = Signal(intbv())
         din_i = Signal(intbv())
@@ -67,8 +50,82 @@ class TestFIFOProperties(TestCase):
         we_i = Signal(bool(False))
         empty_i = Signal(bool())
         clk_i = Signal(bool())
-        dut = FIFO(dout_i, din_i, re_i, we_i, empty_i, clk_i, 3)
-        check = test(re_i, we_i, empty_i, clk_i)
+        rst_n_i = Signal(bool(True))
+        dut = FIFO(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i, 3)
+        check = test(re_i, we_i, empty_i, clk_i, rst_n_i)
+        sim = Simulation(dut, check)
+        sim.run(quiet =1)
+
+    def testNoWriteAtOverflow(self):
+        """ test that further writing has no effect when full """
+        
+        def test(dout, din, re, we, empty, clk, rst_n):
+            rst_n.next = False
+            yield delay(2)
+            rst_n.next = True
+            yield delay(1)
+            re.next = False # don't read
+            we.next = True
+            self.assertEqual(empty, True)
+            for i in range (6):
+                clk.next = False
+                yield delay(10)
+                we.next = (True, True, True, True, False, False)[i]
+                re.next = (False, False, False, True, False, True)[i]
+                din.next = (i+1)*11
+                clk.next = True
+                yield delay(10)
+                self.assertEqual(dout, (None,None,None,11,11,22)[i])
+            self.assertEqual(empty, True)
+            re.next = False
+            we.next = False
+            
+           
+        dout_i = Signal(intbv())
+        din_i = Signal(intbv())
+        re_i = Signal(bool(False))
+        we_i = Signal(bool(False))
+        empty_i = Signal(bool())
+        clk_i = Signal(bool(False))
+        rst_n_i = Signal(bool(True))
+        dut = FIFO(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i, 2)
+        check = test(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i)
+        sim = Simulation(dut, check)
+        sim.run(quiet =1)
+
+    def testReadWhatWeWrote(self):
+        """ test were we actually check that the FIFO does not manipulate data """
+        
+        def test(dout, din, re, we, empty, clk, rst_n):
+            rst_n.next = False
+            yield delay(2)
+            rst_n.next = True
+            yield delay(1)
+            re.next = False # don't read
+            we.next = True
+            self.assertEqual(empty, True)
+            for i in range (6):
+                clk.next = False
+                yield delay(10)
+                we.next = (True, True, True, True, True, False)[i]
+                re.next = (False, True, True, True, False, True)[i]
+                din.next = (i+1)*11
+                clk.next = True
+                yield delay(10)
+                self.assertEqual(dout, (None,11,22,33,33,44)[i])
+            re.next = False
+            we.next = False
+            
+           
+        dout_i = Signal(intbv())
+        din_i = Signal(intbv())
+        re_i = Signal(bool(False))
+        we_i = Signal(bool(False))
+        empty_i = Signal(bool())
+        clk_i = Signal(bool(False))
+        rst_n_i = Signal(bool(True))
+        dut = FIFO(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i, 2)
+        check = test(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i)
         sim = Simulation(dut, check)
         sim.run(quiet =1)
 
