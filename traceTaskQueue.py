@@ -6,7 +6,7 @@ import MARSparam
 
 def testbench(nbwarriors):
 
-    Warrior_i = Signal(intbv(0)[len(intbv(min=0, max=nbwarriors)):])
+    Warrior_i = Signal(intbv(0, min=0, max=nbwarriors))
     IPin_i = Signal(intbv(0)[MARSparam.AddrWidth:])
     IPout_i = Signal(intbv(0)[MARSparam.AddrWidth:])
     re_i = Signal(bool(False))
