@@ -6,7 +6,7 @@ This is the central memory storage for the Warriors, the "Hill"
 
 from myhdl import *
 
-def RAM(dout, din, addr, we, clk, width, depth):
+def RAM(dout, din, addr, we, clk, rst_n, width, depth):
     """ Basic RAM model """
     
     mem = [Signal(intbv(0)[width:]) for i in range(depth)]
@@ -16,7 +16,7 @@ def RAM(dout, din, addr, we, clk, width, depth):
         if we:
             mem[int(addr)].next = din
 
-    @always_comb()
+    @always_comb
     def read():
         dout.next = mem[int(addr)]
 
