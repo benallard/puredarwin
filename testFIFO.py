@@ -104,15 +104,15 @@ class TestFIFOProperties(TestCase):
             re.next = False # don't read
             we.next = True
             self.assertEqual(empty, True)
-            for i in range (6):
+            for i in range (10):
                 clk.next = False
                 yield delay(10)
-                we.next = (True, True, True, True, True, False)[i]
-                re.next = (False, True, True, True, False, True)[i]
+                we.next = (True, True, True, True, True, False, True, True, False, False)[i]
+                re.next = (False, True, True, True, False, True, False, True, True, False)[i]
                 din.next = (i+1)*11
                 clk.next = True
                 yield delay(10)
-                self.assertEqual(dout, (None,11,22,33,33,44)[i])
+                self.assertEqual(dout, (None,11,22,33,33,44,44,55, 77, 77)[i])
             re.next = False
             we.next = False
             
