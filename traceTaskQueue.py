@@ -4,7 +4,7 @@ from Task import TaskQueue
 
 import MARSparam
 
-def testbench(nbwarriors):
+def tracebench(nbwarriors):
 
     Warrior_i = Signal(intbv(0, min=0, max=nbwarriors))
     IPin_i = Signal(intbv(0)[MARSparam.AddrWidth:])
