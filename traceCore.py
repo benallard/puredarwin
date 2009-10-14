@@ -22,6 +22,7 @@ def tracebench():
 
     @instance
     def stimuli():
+        yield delay(10)
         for i in range(20):
             we_i.next = randrange(2**6)
             addr_i.next = randrange(MARSparam.CORESIZE)

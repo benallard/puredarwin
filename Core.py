@@ -28,6 +28,7 @@ def RAM(dout, din, addr, we, clk, rst_n, width, depth):
 def Core(addr, din, dout, we, clk, rst_n, maxSize):
     """ Our Core """
 
+    opcode_we, modif_we, amode_we, anumber_we, bmode_we, bnumber_we = [Signal(bool()) for i in range (6)]
 
     opcode_out = Signal(intbv(0)[5:])
     modif_out = Signal(intbv(0)[3:])
@@ -64,12 +65,19 @@ def Core(addr, din, dout, we, clk, rst_n, maxSize):
         bnumber_in.next = din[MARSparam.AddrWidth:0]
         dout.next[MARSparam.AddrWidth:0] = bnumber_out
 
+        opcode_we.next = we[5]
+        modif_we.next = we[4]
+        amode_we.next = we[3]
+        anumber_we.next = we[2]
+        bmode_we.next = we[1]
+        bnumber_we.next = we[0]
+
     # My RAMs
-    OpCode = RAM(opcode_out, opcode_in, addr, we[5] , clk, rst_n, 5, maxSize)
-    Modif = RAM(modif_out, modif_in, addr, we[4], clk, rst_n, 3, maxSize)
-    AMode = RAM(amode_out, amode_in, addr, we[3], clk, rst_n, 3, maxSize)
-    ANumber = RAM(anumber_out, anumber_in, addr, we[2], clk, rst_n, MARSparam.AddrWidth, maxSize)
-    BMode = RAM(bmode_out, bmode_in, addr, we[1], clk, rst_n, 3, maxSize)
-    BNumber = RAM(bnumber_out, bnumber_in, addr, we[0], clk, rst_n, MARSparam.AddrWidth, maxSize)
+    OpCode = RAM(opcode_out, opcode_in, addr, opcode_we , clk, rst_n, 5, maxSize)
+    Modif = RAM(modif_out, modif_in, addr, modif_we, clk, rst_n, 3, maxSize)
+    AMode = RAM(amode_out, amode_in, addr, amode_we, clk, rst_n, 3, maxSize)
+    ANumber = RAM(anumber_out, anumber_in, addr, anumber_we, clk, rst_n, MARSparam.AddrWidth, maxSize)
+    BMode = RAM(bmode_out, bmode_in, addr, bmode_we, clk, rst_n, 3, maxSize)
+    BNumber = RAM(bnumber_out, bnumber_in, addr, bnumber_we, clk, rst_n, MARSparam.AddrWidth, maxSize)
 
     return OpCode, Modif, AMode, ANumber, BMode, BNumber, comb
