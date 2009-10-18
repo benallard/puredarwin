@@ -25,7 +25,20 @@ def RAM(dout, din, addr, we, clk, rst_n, width, depth):
 
     return read, write
 
-def Core(addr, din, dout, we, clk, rst_n, maxSize):
+def Fold(AddressIn, AddressOut, limit, maxSize):
+
+    Address_i = Signal(intbv(min = 0, max = MARSparam.CORESIZE))
+
+    @always_comb
+    def comb():
+        if (AddressIn % limit) > (limit/2):
+            AddressOut.next = (AddressIn % limit) + maxSize - limit
+        else:
+            AddressOut.next = AddressIn % limit
+
+    return comb
+
+def Core(pc, waddr, din, raddr, dout, we, clk, rst_n, maxSize):
     """ Our Core """
 
     opcode_we, modif_we, amode_we, anumber_we, bmode_we, bnumber_we = [Signal(bool()) for i in range (6)]
