@@ -9,7 +9,7 @@ from myhdl import *
 import MARSparam
 from MARSparam import InstrWidth
 
-def RAM(dout, din, addr, we, clk, rst_n, width, depth):
+def RAM(raddr, dout, waddr, din, we, clk, rst_n, width, depth):
     """ Basic RAM model """
     
     mem = [Signal(intbv(0)[width:]) for i in range(depth)]
@@ -17,17 +17,15 @@ def RAM(dout, din, addr, we, clk, rst_n, width, depth):
     @always(clk.posedge)
     def write():
         if we:
-            mem[int(addr)].next = din
+            mem[int(waddr)].next = din
 
     @always_comb
     def read():
-        dout.next = mem[int(addr)]
+        dout.next = mem[int(raddr)]
 
     return read, write
 
 def Fold(AddressIn, AddressOut, limit, maxSize):
-
-    Address_i = Signal(intbv(min = 0, max = MARSparam.CORESIZE))
 
     @always_comb
     def comb():
@@ -40,6 +38,8 @@ def Fold(AddressIn, AddressOut, limit, maxSize):
 
 def Core(pc, waddr, din, raddr, dout, we, clk, rst_n, maxSize):
     """ Our Core """
+
+    raddr_fold, raddr_i, waddr_fold, waddr_i = [Signal(intbv(0, min=0, max=MARSparam.CORESIZE)) for i in range(4)]
 
     opcode_we, modif_we, amode_we, anumber_we, bmode_we, bnumber_we = [Signal(bool()) for i in range (6)]
 
@@ -85,12 +85,24 @@ def Core(pc, waddr, din, raddr, dout, we, clk, rst_n, maxSize):
         bmode_we.next = we[1]
         bnumber_we.next = we[0]
 
-    # My RAMs
-    OpCode = RAM(opcode_out, opcode_in, addr, opcode_we , clk, rst_n, 5, maxSize)
-    Modif = RAM(modif_out, modif_in, addr, modif_we, clk, rst_n, 3, maxSize)
-    AMode = RAM(amode_out, amode_in, addr, amode_we, clk, rst_n, 3, maxSize)
-    ANumber = RAM(anumber_out, anumber_in, addr, anumber_we, clk, rst_n, MARSparam.AddrWidth, maxSize)
-    BMode = RAM(bmode_out, bmode_in, addr, bmode_we, clk, rst_n, 3, maxSize)
-    BNumber = RAM(bnumber_out, bnumber_in, addr, bnumber_we, clk, rst_n, MARSparam.AddrWidth, maxSize)
+        raddr_i.next = (pc + raddr_fold) % MARSparam.CORESIZE
+        waddr_i.next = (pc + waddr_fold) % MARSparam.CORESIZE
 
-    return OpCode, Modif, AMode, ANumber, BMode, BNumber, comb
+    @always(raddr_i, waddr_i)
+    def verbose():
+        print "R: PC: %d, Ofs: %d ==> %d" % (pc, raddr, raddr_i)
+        print "W: PC: %d, Ofs: %d ==> %d" % (pc, waddr, waddr_i)
+
+    ReadFold = Fold(raddr, raddr_fold, MARSparam.ReadRange, MARSparam.CORESIZE)
+    WriteFold = Fold(waddr, waddr_fold, MARSparam.WriteRange, MARSparam.CORESIZE)
+
+
+    # My RAMs
+    OpCode = RAM(raddr_i, opcode_out, waddr_i, opcode_in, opcode_we , clk, rst_n, 5, maxSize)
+    Modif = RAM(raddr_i, modif_out, waddr_i, modif_in, modif_we, clk, rst_n, 3, maxSize)
+    AMode = RAM(raddr_i, amode_out, waddr_i, amode_in, amode_we, clk, rst_n, 3, maxSize)
+    ANumber = RAM(raddr_i, anumber_out, waddr_i, anumber_in, anumber_we, clk, rst_n, MARSparam.AddrWidth, maxSize)
+    BMode = RAM(raddr_i, bmode_out, waddr_i, bmode_in, bmode_we, clk, rst_n, 3, maxSize)
+    BNumber = RAM(raddr_i, bnumber_out, waddr_i, bnumber_in, bnumber_we, clk, rst_n, MARSparam.AddrWidth, maxSize)
+
+    return OpCode, Modif, AMode, ANumber, BMode, BNumber, ReadFold, WriteFold, comb, verbose
