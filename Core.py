@@ -69,7 +69,7 @@ def Core(pc, waddr, din, raddr, dout, we, clk, rst_n, maxSize):
 
     # Those are VHDL Aliases
     @always_comb
-    def comb():
+    def split():
         opcode_in.next = din[InstrWidth:InstrWidth-5]
         dout.next[InstrWidth:InstrWidth-5] = opcode_out
 
@@ -112,4 +112,4 @@ def Core(pc, waddr, din, raddr, dout, we, clk, rst_n, maxSize):
     BMode = RAM(raddr_i, bmode_out, waddr_i, bmode_in, bmode_we, clk, rst_n, 3, maxSize)
     BNumber = RAM(raddr_i, bnumber_out, waddr_i, bnumber_in, bnumber_we, clk, rst_n, MARSparam.AddrWidth, maxSize)
 
-    return OpCode, Modif, AMode, ANumber, BMode, BNumber, ReadFold, WriteFold, comb, verbose
+    return OpCode, Modif, AMode, ANumber, BMode, BNumber, ReadFold, WriteFold, split, verbose
