@@ -13,24 +13,27 @@ class testFoldProperties(TestCase):
     def testAll(self):
         """ Global mapping """
 
-        def cref(addr, limit, size):
+        def cref(pc, addr, limit, size):
             result = addr % limit
             if result > (limit / 2):
                 result += size - limit
-            return result
+            return (pc + result) % size
 
-        def test(addrin, addrout):
-            for addr in range(2 * MARSparam.CORESIZE):
-                addrin.next = addr
-                yield delay(5)
-                self.assertEqual(addrout, cref(addrin, MARSparam.ReadRange, MARSparam.CORESIZE))
+        def test(pc, addrin, addrout):
+            for index in range (MARSparam.CORESIZE / 40):
+                pc.next = randrange(MARSparam.CORESIZE)
+                for addr in range(MARSparam.CORESIZE/40):
+                    addrin.next = randrange(MARSparam.CORESIZE * 2)
+                    yield delay(5)
+                    self.assertEqual(addrout, cref(pc, addrin, MARSparam.ReadRange, MARSparam.CORESIZE))
             raise StopSimulation
 
+        pc_i = Signal(intbv(0))
         addrin_i = Signal(intbv(0))
         addrout_i = Signal(intbv(0))
 
-        dut = Fold(addrin_i, addrout_i, MARSparam.ReadRange, MARSparam.CORESIZE)
-        check = test(addrin_i, addrout_i)
+        dut = Fold(pc_i, addrin_i, addrout_i, MARSparam.ReadRange, MARSparam.CORESIZE)
+        check = test(pc_i, addrin_i, addrout_i)
 
         sim = Simulation(dut, check)
         sim.run(quiet = 1)

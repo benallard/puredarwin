@@ -25,21 +25,31 @@ def RAM(raddr, dout, waddr, din, we, clk, rst_n, width, depth):
 
     return read, write
 
-def Fold(AddressIn, AddressOut, limit, maxSize):
+def Fold(PC, AddressIn, AddressOut, limit, maxSize):
+
+    AddrIn_fold, AddrIn_limit = [Signal(intbv(0, min=0, max=MARSparam.CORESIZE)) for i in range(2)]
 
     @always_comb
-    def comb():
-        if (AddressIn % limit) > (limit/2):
-            AddressOut.next = (AddressIn % limit) + maxSize - limit
-        else:
-            AddressOut.next = AddressIn % limit
+    def comb1():
+        AddrIn_limit.next = AddressIn % limit
 
-    return comb
+    @always_comb
+    def comb2():
+        if (AddrIn_limit) > (limit/2):
+            AddrIn_fold.next = (AddrIn_limit) + maxSize - limit
+        else:
+            AddrIn_fold.next = AddrIn_limit
+
+    @always_comb
+    def comb3():
+        AddressOut.next = (PC + AddrIn_fold) % maxSize
+
+    return comb1, comb2, comb3
 
 def Core(pc, waddr, din, raddr, dout, we, clk, rst_n, maxSize):
     """ Our Core """
 
-    raddr_fold, raddr_i, waddr_fold, waddr_i = [Signal(intbv(0, min=0, max=MARSparam.CORESIZE)) for i in range(4)]
+    raddr_i, waddr_i = [Signal(intbv(0, min=0, max=MARSparam.CORESIZE)) for i in range(2)]
 
     opcode_we, modif_we, amode_we, anumber_we, bmode_we, bnumber_we = [Signal(bool()) for i in range (6)]
 
@@ -85,16 +95,13 @@ def Core(pc, waddr, din, raddr, dout, we, clk, rst_n, maxSize):
         bmode_we.next = we[1]
         bnumber_we.next = we[0]
 
-        raddr_i.next = (pc + raddr_fold) % MARSparam.CORESIZE
-        waddr_i.next = (pc + waddr_fold) % MARSparam.CORESIZE
-
     @always(raddr_i, waddr_i)
     def verbose():
         print "R: PC: %d, Ofs: %d ==> %d" % (pc, raddr, raddr_i)
         print "W: PC: %d, Ofs: %d ==> %d" % (pc, waddr, waddr_i)
 
-    ReadFold = Fold(raddr, raddr_fold, MARSparam.ReadRange, MARSparam.CORESIZE)
-    WriteFold = Fold(waddr, waddr_fold, MARSparam.WriteRange, MARSparam.CORESIZE)
+    ReadFold = Fold(pc, raddr, raddr_i, MARSparam.ReadRange, MARSparam.CORESIZE)
+    WriteFold = Fold(pc, waddr, waddr_i, MARSparam.WriteRange, MARSparam.CORESIZE)
 
 
     # My RAMs
