@@ -7,11 +7,11 @@ We will try to keep it as quick as possible ...
 from myhdl import *
 
 import MARSparam
-from MARSparam import t_Modifier
+from MARSparam import t_Mode
 from MARSparam import InstrWidth
 
 # Addr and Addr == Number
-def EvalOp(Modif, Number, Ptr, WData, we, RData, clk):
+def EvalOp(Mod, Number, Ptr, WData, we, RData, clk):
     """
     Eval A operand (Or actually B operand)
 
@@ -30,33 +30,34 @@ def EvalOp(Modif, Number, Ptr, WData, we, RData, clk):
     def fsm():
         we.next = 0
 
-        if Modif == t_Modifier.IMMEDIATE:
+        if Mod == t_Mode.IMMEDIATE:
             Ptr.next = 0
-        elif Modif == t_Modifier.DIRECT:
+        elif Mod == t_Mode.DIRECT:
             Ptr.next = Number
 
-        elif Modif == t_Modifier.A_INDIRECT:
+        elif Mod == t_Mode.A_INDIRECT:
             Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number
-        elif Modif == t_Modifier.A_INCREMENT:
+        elif Mod == t_Mode.A_INCREMENT:
             Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number + 1
             we.next = we_ANum_only
             WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + 1
-        elif Modif == t_Modifier.A_DECREMENT:
+        elif Mod == t_Mode.A_DECREMENT:
             Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number - 1
             we.next = we_ANum_only
             WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] - 1
 
-        elif Modif == t_Modifier.B_INDIRECT:
+        elif Mod == t_Mode.B_INDIRECT:
             Ptr.next = RData[MARSparam.AddrWidth:0] + Number
-        elif Modif == t_Modifier.B_INCREMENT:
+        elif Mod == t_Mode.B_INCREMENT:
             Ptr.next = RData[MARSparam.AddrWidth:0] + Number + 1
             we.next = we_BNum_only
             WData.next = RData[MARSparam.AddrWidth:0] + 1
-        elif Modif == t_Modifier.B_DECREMENT:
+        elif Mod == t_Mode.B_DECREMENT:
             Ptr.next = RData[MARSparam.AddrWidth:0] + Number - 1
             we.next = we_BNum_only
             WData.next = RData[MARSparam.AddrWidth:0] - 1
         else:
-            raise ValueError("Modif: %d not understood" % Modif)
+            raise ValueError("Mod: %d not understood" % Mod)
 
     return fsm
+

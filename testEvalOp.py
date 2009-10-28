@@ -13,11 +13,11 @@ class testEvalOpProperties(TestCase):
     def testAll(self):
         """ Global mapping """
 
-        def test(Modif, Number, Ptr, Wdata, we, Rdata, clk):
+        def test(Mod, Number, Ptr, Wdata, we, Rdata, clk):
             for index in range(200):
                 clk.next = False
                 yield delay(5)
-                Modif.next =index % 8
+                Mod.next =index % 8
                 num = randrange(MARSparam.CORESIZE)
                 Number.next = num
                 read = intbv(randrange(2**MARSparam.InstrWidth))
@@ -35,17 +35,17 @@ class testEvalOpProperties(TestCase):
                        read[MARSparam.AddrWidth:0] + num,
                        read[MARSparam.AddrWidth:0] + num - 1,
                        read[MARSparam.AddrWidth:0] + num + 1]
-                self.assertEquals(Ptr, val[int(Modif)])
+                self.assertEquals(Ptr, val[int(Mod)])
             raise StopSimulation
 
-        Modif_i = Signal(0)
+        Mod_i = Signal(0)
         Number_i, Ptr_i = [Signal(0) for i in range(2)]
         WData_i, RData_i = [Signal(0) for i in range(2)]
         we_i = Signal(0)
         clk_i = Signal(0)
 
-        dut = EvalOp(Modif_i, Number_i, Ptr_i, WData_i, we_i, RData_i, clk_i)
-        check = test(Modif_i, Number_i, Ptr_i, WData_i, we_i, RData_i, clk_i)
+        dut = EvalOp(Mod_i, Number_i, Ptr_i, WData_i, we_i, RData_i, clk_i)
+        check = test(Mod_i, Number_i, Ptr_i, WData_i, we_i, RData_i, clk_i)
 
         sim = Simulation(dut, check)
         sim.run(quiet = 1)
