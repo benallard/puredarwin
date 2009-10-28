@@ -17,6 +17,5 @@ InstrWidth = 14 + 2 * AddrWidth
 ReadRange = 400
 WriteRange = 400
 
-t_Modifier = enum("IMMEDIATE", "DIRECT",
-                   "A_INDIRECT", "A_DECREMENT", "A_INCREMENT",
-                   "B_INDIRECT", "B_DECREMENT", "B_INCREMENT")
+class t_Modifier:
+    IMMEDIATE, DIRECT, A_INDIRECT, A_DECREMENT, A_INCREMENT, B_INDIRECT, B_DECREMENT, B_INCREMENT = range(8)

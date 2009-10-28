@@ -11,7 +11,7 @@ from MARSparam import t_Modifier
 from MARSparam import InstrWidth
 
 # Addr and Addr == Number
-def EvalOp(Modif, Number, Ptr, Wdata, we, Rdata, clk):
+def EvalOp(Modif, Number, Ptr, WData, we, RData, clk):
     """
     Eval A operand (Or actually B operand)
 
@@ -24,7 +24,7 @@ def EvalOp(Modif, Number, Ptr, Wdata, we, Rdata, clk):
     """
 
     we_ANum_only = intbv("000100")
-    we_BNum_only = intbv("000101")
+    we_BNum_only = intbv("000001")
 
     @always(clk.posedge)
     def fsm():
@@ -36,7 +36,7 @@ def EvalOp(Modif, Number, Ptr, Wdata, we, Rdata, clk):
             Ptr.next = Number
 
         elif Modif == t_Modifier.A_INDIRECT:
-            Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth]
+            Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number
         elif Modif == t_Modifier.A_INCREMENT:
             Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number + 1
             we.next = we_ANum_only
@@ -47,7 +47,7 @@ def EvalOp(Modif, Number, Ptr, Wdata, we, Rdata, clk):
             WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] - 1
 
         elif Modif == t_Modifier.B_INDIRECT:
-            Ptr.next = RData[MARSparam.AddrWidth:0]
+            Ptr.next = RData[MARSparam.AddrWidth:0] + Number
         elif Modif == t_Modifier.B_INCREMENT:
             Ptr.next = RData[MARSparam.AddrWidth:0] + Number + 1
             we.next = we_BNum_only
@@ -56,5 +56,7 @@ def EvalOp(Modif, Number, Ptr, Wdata, we, Rdata, clk):
             Ptr.next = RData[MARSparam.AddrWidth:0] + Number - 1
             we.next = we_BNum_only
             WData.next = RData[MARSparam.AddrWidth:0] - 1
+        else:
+            raise ValueError("Modif: %d not understood" % Modif)
 
     return fsm
