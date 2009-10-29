@@ -6,7 +6,7 @@ from myhdl import *
 
 import MARSparam
 
-def FIFO(dout, din, re, we, empty, clk, rst_n, maxFilling, ID = None):
+def FIFO(dout, din1, we1, din2, we2, re, empty, clk, rst_n, maxFilling, ID = None):
     """ Fifo that fits our need: without full flag """
 
     content = []
@@ -17,25 +17,46 @@ def FIFO(dout, din, re, we, empty, clk, rst_n, maxFilling, ID = None):
             del content[:] # that one is tricky ...
         elif clk == True:
             if ID != None:
-                print "FIFO::%d (%d) we:%s re:%s " % (ID, len(content), we, re)
-            if we:
+                print "FIFO::%d (%d) we1:%s we2:%s re:%s " % (ID, len(content), we1, we2, re)
+            if we1:
                 if (len(content) < maxFilling):
-                    content.insert(0, din.val)
+                    content.insert(0, din1.val)
+                else:
+                    print "%d: I'm cliping !"
+            if we2:
+                if not we1:
+                    raise ValueError("Writing to second channel when First one not used")
+                if (len(content) < maxFilling):
+                    content.insert(0, din2.val)
+                else:
+                    print "%d: I'm cliping !" % ID
+
             if re:
                 dout.next = content.pop()
         empty.next = (len(content) == 0)
 
     return access
 
-def TaskQueue(Warrior, IPin, IPout, re, we, empty, clk, rst_n, maxWarriors):
+def TaskQueue(Warrior, IPin1, IPin2, IPout, re, we1, we2, empty, clk, rst_n, maxWarriors, maxFilling=MARSparam.MAXPROCESSES):
     
     dout_i = [Signal(intbv(0)[MARSparam.AddrWidth:]) for i in range(maxWarriors)]
-    din_i = [Signal(intbv(0)[MARSparam.AddrWidth:]) for i in range(maxWarriors)]
+    din1_i, din2_i = [[Signal(intbv(0)[MARSparam.AddrWidth:]) for i in range(maxWarriors)]for i in range(2)]
     re_i = [Signal(bool(False)) for i in range(maxWarriors)]
-    we_i = [Signal(bool(False)) for i in range(maxWarriors)]
+    we1_i, we2_i = [[Signal(bool(False)) for i in range(maxWarriors)] for i in range (2)]
     empty_i = [Signal(bool(True)) for i in range(maxWarriors)]
     clk_i = [Signal(bool(False)) for i in range(maxWarriors)]
-    queue = [FIFO(dout_i[i], din_i[i], re_i[i], we_i[i], empty_i[i], clk_i[i], rst_n, MARSparam.MAXPROCESSES, ID=i) for i in range(maxWarriors)]
+    queue = [FIFO(dout=dout_i[i],
+                  din1=din1_i[i],
+                  din2=din2_i[i],
+                  re=re_i[i],
+                  we1=we1_i[i],
+                  we2=we2_i[i],
+                  empty=empty_i[i],
+                  clk=clk_i[i],
+                  rst_n=rst_n,
+                  maxFilling=maxFilling,
+                  ID=i)
+             for i in range(maxWarriors)]
 
     @always_comb
     def comb():
@@ -57,9 +78,11 @@ def TaskQueue(Warrior, IPin, IPout, re, we, empty, clk, rst_n, maxWarriors):
           - empty
         """
         IPout.next = dout_i[int(Warrior)]
-        din_i[int(Warrior)].next = IPin
+        din1_i[int(Warrior)].next = IPin1
+        din2_i[int(Warrior)].next = IPin2
         re_i[int(Warrior)].next = re
-        we_i[int(Warrior)].next = we
+        we1_i[int(Warrior)].next = we1
+        we2_i[int(Warrior)].next = we2
         empty.next = empty_i[int(Warrior)]
         clk_i[int(Warrior)].next = clk
 

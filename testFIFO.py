@@ -29,8 +29,8 @@ class TestFIFOProperties(TestCase):
                 clk.next = False
                 yield delay(10)
 
-                we.next = (True, True, False, False, False, False, True, True)[i]
-                re.next = (False, False, False, True, False, True, False, False)[i]
+                we.next = i in (0, 1, 6, 7)
+                re.next = i in (3, 5)
 
                 if i == 7:
                     rst_n.next = False
@@ -38,10 +38,11 @@ class TestFIFOProperties(TestCase):
                     rst_n.next = True
                     yield delay(1)
                 
-                self.assertEqual(empty, (True, False, False, False, False, False, True, True)[i])
+                self.assertEqual(empty, i in (0, 6, 7))
                 clk.next = True
                 yield delay(10) #posedge
-                self.assertEqual(empty, (False, False, False, False, False, True, False, False)[i])                
+                self.assertEqual(empty, i == 5)
+
             re.next = False;
            
         dout_i = Signal(intbv())
@@ -51,7 +52,7 @@ class TestFIFOProperties(TestCase):
         empty_i = Signal(bool())
         clk_i = Signal(bool())
         rst_n_i = Signal(bool(True))
-        dut = FIFO(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i, 3)
+        dut = FIFO(dout_i, din_i, we_i, 0, False, re_i, empty_i, clk_i, rst_n_i, 3)
         check = test(re_i, we_i, empty_i, clk_i, rst_n_i)
         sim = Simulation(dut, check)
         sim.run(quiet =1)
@@ -88,7 +89,7 @@ class TestFIFOProperties(TestCase):
         empty_i = Signal(bool())
         clk_i = Signal(bool(False))
         rst_n_i = Signal(bool(True))
-        dut = FIFO(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i, 2)
+        dut = FIFO(dout_i, din_i,we_i,0, False, re_i, empty_i, clk_i, rst_n_i, 2)
         check = test(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i)
         sim = Simulation(dut, check)
         sim.run(quiet =1)
@@ -124,7 +125,7 @@ class TestFIFOProperties(TestCase):
         empty_i = Signal(bool())
         clk_i = Signal(bool(False))
         rst_n_i = Signal(bool(True))
-        dut = FIFO(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i, 2)
+        dut = FIFO(dout_i, din_i, we_i, 0, False, re_i, empty_i, clk_i, rst_n_i, 2)
         check = test(dout_i, din_i, re_i, we_i, empty_i, clk_i, rst_n_i)
         sim = Simulation(dut, check)
         sim.run(quiet =1)
