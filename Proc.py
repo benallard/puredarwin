@@ -7,7 +7,7 @@ We will try to keep it as quick as possible ...
 from myhdl import *
 
 import MARSparam
-from MARSparam import t_Mode
+from MARSparam import t_OpCode, t_Modifier, t_Mode
 from MARSparam import InstrWidth
 
 def EvalOp(Mod, Number, Ptr, WData, we, RData, clk):
@@ -67,14 +67,26 @@ def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
     @always(clk.posedge)
     def Out1():
         we1.next = OpCode != t_OpCode.DAT
-        
+        if OpCode in (t_OpCode.MOV,
+                      t_OpCode.ADD,
+                      t_OpCode.SUB,
+                      t_OpCode.MUL,
+                      t_OpCode.SPL,
+                      t_OpCode.NOP):
+            IPout1.next = (PC + 1) % MARSparam.CORESIZE
+        elif OpCode is t_OpCode.JMP:
+            IPOut1.next = RPA
+        else:
+            raise NotImplementedError("Only few OpCode are Implemented")
 
     @always(clk.posedge)
     def Out2():
         we2.next = False
-        if OpCode == t_OpCode.SPL:
+        if OpCode is t_OpCode.SPL:
             IPOut2.next = RPA
             we2.next = True
+
+    return Out1, Out2
 
 def OutCore(OpCode, Modif, IRA, IRB, we, WData, DivByZero, clk):
     """
