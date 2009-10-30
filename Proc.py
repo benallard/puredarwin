@@ -66,8 +66,10 @@ def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
 
     @always(clk.posedge)
     def Out1():
-        we1.next = OpCode != t_OpCode.DAT
-        if OpCode in (t_OpCode.MOV,
+        we1.next = True
+        if OpCode is t_OpCode.DAT:
+            we1.next = False
+        elif OpCode in (t_OpCode.MOV,
                       t_OpCode.ADD,
                       t_OpCode.SUB,
                       t_OpCode.MUL,
@@ -83,7 +85,7 @@ def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
     def Out2():
         we2.next = False
         if OpCode is t_OpCode.SPL:
-            IPOut2.next = RPA
+            IPout2.next = RPA
             we2.next = True
 
     return Out1, Out2
