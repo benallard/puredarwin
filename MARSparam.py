@@ -26,11 +26,32 @@ class we:
     BNum   = intbv("000001")
 
 class t_OpCode:
-    DAT, MOV, ADD, SUB, MUL, DIV, MOD, JMP, JMZ, JMN, DJN, CMP, SNE, SLT, SPL, NOP = range(16)
+    DAT, MOV, ADD, SUB, MUL, DIV, MOD, JMP, JMZ, JMN, DJN, CMP, SNE, SLT, SPL, NOP = [intbv(i)[5:] for i in range(16)]
     SEQ = CMP
 
 class t_Modifier:
-    A, B, AB, BA, F, X, I = range(7)
+    A, B, AB, BA, F, X, I = [intbv(i)[3:] for i in range(7)]
 
 class t_Mode:
-    IMMEDIATE, DIRECT, A_INDIRECT, A_DECREMENT, A_INCREMENT, B_INDIRECT, B_DECREMENT, B_INCREMENT = range(8)
+
+    IMMEDIATE, DIRECT, A_INDIRECT, A_DECREMENT, A_INCREMENT, B_INDIRECT, B_DECREMENT, B_INCREMENT = [intbv(i)[3:] for i in range(8)]
+
+    def __getattr__(self, name):
+        if name == '#':
+            return IMMEDIATE
+        elif name == '$':
+            return DIRECT
+        elif name == '*':
+            return A_INIDRECT
+        elif name == '@':
+            return B_INDIRECT
+        elif name == '{':
+            return A_DECREMENT
+        elif name == '<':
+            return B_DECREMENT
+        elif name == '}':
+            return A_INCREMENT
+        elif name == '>':
+            return B_INCREMENT
+        else:
+            raise AttributeError("Modifier %s not defined" % name)
