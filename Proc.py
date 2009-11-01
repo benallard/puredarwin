@@ -226,7 +226,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
     OutQueue_i = OutQueue(OpCode, APtr, PC, IPOut1, we1_outqueue, IPOut2, we2_outqueue, clk)
     OutCore_i = OutCore(OpCode, Modifier, IRA, IRB, we_outcore, WData_outcore, clk)
 
-    @always(Instr)
+    @always_comb
     def link():
         OpCode.next = Instr.OpCode
         Modifier.next = Instr.Modifier

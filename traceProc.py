@@ -12,7 +12,7 @@ InstrIMP   = concat(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DI
 def traceBench(IMP=False, DWARF=True):
     """ How does the proc reacts to a basic IMP """
     
-    Offset = 4738
+    Offset = 0
 
     Core = {}
     if IMP:
@@ -65,6 +65,8 @@ def traceBench(IMP=False, DWARF=True):
             yield clk_i.posedge
             if re_i:
                 Addr = Queue.pop()
+                if PC_i == Addr:
+                    RData_i.next = Core.get((int(ROfs_i) + PC_i) % CORESIZE, InstrEmpty)
                 PC_i.next = Addr
                 print  "PC: %s" % Addr
 
@@ -76,8 +78,6 @@ def traceBench(IMP=False, DWARF=True):
         yield delay(2)
         rst_n_i.next = True
         # run
-
-        Instr_i.next = InstrEmpty
 
         for i in range (200):
 
