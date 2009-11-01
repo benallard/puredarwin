@@ -17,8 +17,10 @@ class testMARSparamProperties(unittest.TestCase):
     def testInstr(self):
         """ Test the Instr class """
 
-        Instruction = MARSparam.Instr()
-        self.assert_(isinstance(Instruction, myhdl.intbv))
+        Instruction = myhdl.Signal(MARSparam.Instr())
+        self.assert_(isinstance(Instruction._val, myhdl.intbv))
+        self.assertEquals(str(type(Instruction)), "<class 'myhdl._Signal._Signal'>")
+        self.assertEquals(str(type(Instruction.val)), "<class 'MARSparam.Instr'>")
         self.assertEquals(len(Instruction), MARSparam.InstrWidth)
         for i in range(len(Instruction)):
             self.assertEquals(Instruction[i], 0)

@@ -72,11 +72,15 @@ class t_Mode:
 
 class Addr(intbv):
     def __init__(self, val=0):
+        if val < 0:
+            val = (val + CORESIZE) % CORESIZE
         intbv.__init__(self, val, min=0, max=CORESIZE)
 
 class Instr(intbv):
-    def __init__(self, OpCode=None, Modifier=None, AMode=None, ANumber=None, BMode=None, BNumber=None):
-        intbv.__init__(self,0, _nrbits=InstrWidth)
+    def __init__(self, OpCode=None, Modifier=None, AMode=None, ANumber=None, BMode=None, BNumber=None, val=None):
+        if not val:
+            val = 0
+        intbv.__init__(self, val, _nrbits=InstrWidth)
         if OpCode:
             self[InstrWidth:InstrWidth-5] = OpCode
         if Modifier:
@@ -121,3 +125,9 @@ class Instr(intbv):
             self[AddrWidth:] = value
         else:
             intbv.__setattr__(self, name,value)
+
+#    def __copy__(self):
+#        return Instr(self)
+
+#    def __deepcopy__(self, visit):
+#        return Instr(self)

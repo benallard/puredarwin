@@ -33,7 +33,7 @@ def EvalOp(Mod, Number, Ptr, WData, we, RData, clk):
             Ptr.next = Number
 
         elif Mod == t_Mode.A_INDIRECT:
-            Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number
+            Ptr.next = MARSparam.Instr(val=int(RData)).ANumber + Number
         elif Mod == t_Mode.A_INCREMENT:
             Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number + 1
             we.next = MARSparam.we.ANum
@@ -44,7 +44,7 @@ def EvalOp(Mod, Number, Ptr, WData, we, RData, clk):
             WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] - 1
 
         elif Mod == t_Mode.B_INDIRECT:
-            Ptr.next = RData[MARSparam.AddrWidth:0] + Number
+            Ptr.next = MARSparam.Instr(val=int(RData)).BNumber + Number
         elif Mod == t_Mode.B_INCREMENT:
             Ptr.next = RData[MARSparam.AddrWidth:0] + Number + 1
             we.next = MARSparam.we.BNum
@@ -77,7 +77,7 @@ def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
                       t_OpCode.NOP):
             IPout1.next = (PC + 1) % MARSparam.CORESIZE
         elif OpCode == t_OpCode.JMP:
-            IPOut1.next = RPA
+            IPout1.next = (PC + RPA) % MARSparam.CORESIZE
         else:
             raise NotImplementedError("Queue: Only few OpCode are Implemented: not %s" % OpCode)
 
@@ -85,7 +85,7 @@ def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
     def Out2():
         we2.next = False
         if OpCode is t_OpCode.SPL:
-            IPout2.next = RPA
+            IPout2.next = (PC + RPA) % MARSparam.CORESIZE
             we2.next = True
 
     return Out1, Out2
@@ -167,8 +167,26 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
             if Modif == t_Modifier.A:
                 WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.ANumber))
                 we.next = MARSparam.we.A
+            elif Modif == t_Modifier.B:
+                WData.next = MARSparam.Instr(BNumber = op(OpCode, IRB.BNumber, IRA.BNumber))
+                we.next = MARSparam.we.B
+            elif Modif == t_Modifier.AB:
+                WData.next = MARSparam.Instr(BNumber = op(OpCode,  IRB.ANumber, IRA.BNumber))
+                we.next = MARSparam.we.AB
+            elif Modif == t_Modifier.BA:
+                WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.BNumber, IRA.ANumber))
+                we.next = MARSparam.we.BA
+            elif Modif in (t_Modifier.F, 
+                           t_Modifier.I):
+                WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.ANumber),
+                                             BNumber = op(OpCode, IRB.BNumber, IRA.BNumber))
+                we.next = MARSparam.we.F
+            elif Modif == t_Modifier.X:
+                WData.next = MARSparam.Instr(BNumber = op(OpCode, IRB.ANumber, IRA.BNumber),
+                                             ANumber = op(OpCode, IRB.BNumber, IRA.ANumber))
+                we.next = MARSparam.we.F
             else:
-                raise NotImplementedError
+                raise ValueError(Modif)
 
         else:
             raise NotImplementedError("Core: Only few OpCode are implemented ; not %s" % OpCode)
@@ -195,7 +213,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
 
     APtr, BPtr = [Signal(MARSparam.Addr()) for i in range(2)]
 
-    IRA, IRB = [Signal(intbv(0)[MARSparam.InstrWidth:]) for i in range(2)]
+    IRA, IRB = [Signal(MARSparam.Instr()) for i in range(2)]
 
     WData_evalopa, WData_evalopb, WData_outcore = [Signal(intbv(0)[MARSparam.InstrWidth:]) for i in range(3)]
 
@@ -208,21 +226,20 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
     OutQueue_i = OutQueue(OpCode, APtr, PC, IPOut1, we1_outqueue, IPOut2, we2_outqueue, clk)
     OutCore_i = OutCore(OpCode, Modifier, IRA, IRB, we_outcore, WData_outcore, clk)
 
-    @always_comb
+    @always(Instr)
     def link():
-        OpCode.next = Instr[InstrWidth:InstrWidth-5]
-        Modifier.next = Instr[InstrWidth-5:InstrWidth-8]
-        AMode.next = Instr[InstrWidth-8:InstrWidth-11]
-        ANumber.next = Instr[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth]
-        BMode.next = Instr[MARSparam.AddrWidth+3:MARSparam.AddrWidth]
-        BNumber.next = Instr[MARSparam.AddrWidth:0]
+        OpCode.next = Instr.OpCode
+        Modifier.next = Instr.Modifier
+        AMode.next = Instr.AMode
+        ANumber.next = Instr.ANumber
+        BMode.next = Instr.BMode
+        BNumber.next = Instr.BNumber
 
     @always(clk.posedge, rst_n.negedge)
     def fsm():
         if not rst_n:
             state.next = t_State.IDLE
         elif clk:
-            print "."
             if state == t_State.IDLE:
                 if req:
                     state.next = t_State.EVALOPA
@@ -248,31 +265,28 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
         actually: a few big MUX
         """
         if state == t_State.IDLE:
-            print "state is IDLE"
             we1.next = False
             we2.next = False
         elif state == t_State.EVALOPA:
-            print "state is EVALA"
             we.next = we_evalopa
             WData.next = WData_evalopa
             WOfs.next = ANumber
         elif state == t_State.EVALOPB:
-            print "state is EVALB"
             we.next = we_evalopb
             WData.next = WData_evalopb
             WOfs.next = BNumber
-            IRA.next = RData
+            IRA.next = MARSparam.Instr(val=int(RData))
         elif state == t_State.REST:
-            print "state is REST"
             we.next = we_outcore
             WData.next = WData_outcore
             WOfs.next = BPtr
             we1.next = we1_outqueue
             we2.next = we2_outqueue
-            IRB.next = RData
+            IRB.next = MARSparam.Instr(val=int(RData))
 
     @always_comb
     def updateROfs():
+        """ Somehow I don't use that one, Can't reember right right now """
         ROfs.next = APtr
         ROfs.next = BPtr
         print "%s %s %s " % (ROfs, APtr, BPtr)
