@@ -106,6 +106,21 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
 
     @always(clk.posedge)
     def comb():
+
+        def op(OpCode, Num1, Num2):
+            if OpCode == t_OpCode.ADD:
+                return Num1 + Num2
+            elif OpCode == t_OpCode.SUB:
+                return Num1 + MARSparam.CORESIZE - Num2
+            elif OpCode == t_OpCode.MUL:
+                return Num1 * Num2
+            elif OpCode == t_OpCode.DIV:
+                return Num1 / Num2
+            elif OpCode == t_OpCode.MOD:
+                return Num1 % Num2
+            else:
+                raise ValueError("OpCode %s is not arithmetic" % OpCode)
+
         we.next = 0
         if OpCode in (t_OpCode.DAT,
                       t_OpCode.JMP,
@@ -121,34 +136,39 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
 
         elif OpCode == t_OpCode.MOV:
             if Modif == t_Modifier.A:
-                WData.next = IRA
+                WData.next = MARSparam.Instr(ANumber=IRA.Anumber)
                 we.next = MARSparam.we.A
             elif Modif == t_Modifier.B:
-                WData.next = IRA
+                WData.next = MARSparam.Instr(BNumber=IRA.BNumber)
                 we.next = MARSparam.we.B
             elif Modif == t_Modifier.AB:
-                WData.next = concat(intbv(0)[MARSparam.AddrWidth:], # pading
-                                    IRA[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth]) # ANum
+                WData.next = MARSparam.Instr(ANumber=IRA.BNumber)
                 we.next = MARSparam.we.AB
             elif Modif == t_Modifier.BA:
-                WData.next = concat(intbv(0)[InstrWidth-11:], # pading
-                                    IRA[MARSparam.AddrWidth:0], # BNum
-                                    intbv(0)[MARSparam.AddrWidth+3:]) # pading
+                WData.next = MARSparam.Instr(BNumber=IRA.Anumber)
                 we.next = MARSparam.we.BA
             elif Modif == t_Modifier.F:
-                WData.next = IRA
+                WData.next = MARSparam.Instr(ANumber=IRA.ANumber,
+                                             BNumber=IRA.BNumber)
                 we.next = MARSparam.we.F
             elif Modif == t_Modifier.X:
-                WData.next = concat(intbv(0)[InstrWidth-11:], # pading
-                                    IRA[MARSparam.AddrWidth:0], # BNum
-                                    intbv(0)[3:], # pading
-                                    IRA[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth]) # ANum
+                WData.next = MARSparam.Instr(ANumber=IRA.Bnumber, 
+                                             BNumber=IRA.ANumber)
                 we.next = MARSparam.we.X
             elif Modif == t_Modifier.I:
                 WData.next = IRA
                 we.next = MARSparam.we.I
             else:
                 raise ValueError("Modifier %d not supported" % Modif)
+
+        elif OpCode in (t_OpCode.ADD,
+                        t_OpCode.SUB,
+                        t_OpCode.MUL):
+            if Modif == t_Modifier.A:
+                WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.ANumber))
+                we.next = MARSparam.we.A
+            else:
+                raise NotImplementedError
 
         else:
             raise NotImplementedError("Core: Only few OpCode are implemented ; not %s" % OpCode)
