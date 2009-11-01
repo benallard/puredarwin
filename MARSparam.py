@@ -71,6 +71,53 @@ class t_Mode:
 
 
 class Addr(intbv):
-
     def __init__(self, val=0):
         intbv.__init__(self, val, min=0, max=CORESIZE)
+
+class Instr(intbv):
+    def __init__(self, OpCode=None, Modifier=None, AMode=None, ANumber=None, BMode=None, BNumber=None):
+        intbv.__init__(self,0, _nrbits=InstrWidth)
+        if OpCode:
+            self[InstrWidth:InstrWidth-5] = OpCode
+        if Modifier:
+            self[InstrWidth-5:InstrWidth-8] = Modifier
+        if AMode:
+            self[InstrWidth-8:InstrWidth-11] = AMode
+        if ANumber:
+            self[InstrWidth-11:InstrWidth-11-AddrWidth] = ANumber
+        if BMode:
+            self[AddrWidth+3:AddrWidth] = BMode
+        if BNumber:
+            self[AddrWidth:] = BNumber
+
+    def __getattr__(self, name):
+        if name == "OpCode":
+            return self[InstrWidth:InstrWidth-5]
+        elif name == "Modifier":
+            return self[InstrWidth-5:InstrWidth-8]
+        elif name == "AMode":
+            return self[InstrWidth-8:InstrWidth-11]
+        elif name == "ANumber":
+            return self[InstrWidth-11:InstrWidth-11-AddrWidth]
+        elif name == "BMode":
+            return self[AddrWidth+3:AddrWidth]
+        elif name == "BNumber":
+            return self[AddrWidth:]
+        else:
+            return intbv.__getattr__(name)
+
+    def __setattr__(self, name, value):
+        if name == "OpCode":
+            self[InstrWidth:InstrWidth-5] = value
+        elif name == "Modifier":
+            self[InstrWidth-5:InstrWidth-8] = value
+        elif name == "AMode":
+            self[InstrWidth-8:InstrWidth-11] = value
+        elif name == "ANumber":
+            self[InstrWidth-11:InstrWidth-11-AddrWidth] = value
+        elif name == "BMode":
+            self[AddrWidth+3:AddrWidth] = value
+        elif name == "BNumber":
+            self[AddrWidth:] = value
+        else:
+            intbv.__setattr__(self, name,value)
