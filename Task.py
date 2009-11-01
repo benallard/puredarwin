@@ -21,15 +21,11 @@ def FIFO(dout, din1, we1, din2, we2, re, empty, clk, rst_n, maxFilling, ID = Non
             if we1:
                 if (len(content) < maxFilling):
                     content.insert(0, din1.val)
-                else:
-                    print "%d: I'm cliping !"
             if we2:
                 if not we1:
                     raise ValueError("Writing to second channel when First one not used")
                 if (len(content) < maxFilling):
                     content.insert(0, din2.val)
-                else:
-                    print "%d: I'm cliping !" % ID
 
             if re:
                 dout.next = content.pop()
