@@ -126,6 +126,9 @@ class Instr(intbv):
         else:
             intbv.__setattr__(self, name,value)
 
+    def __str__(self):
+        return "%s_%s_%s_%s_%s_%s" % (self.OpCode, self.Modifier, self.AMode, self.ANumber, self.BMode, self.BNumber)
+
 #    def __copy__(self):
 #        return Instr(self)
 

@@ -9,12 +9,12 @@ from Proc import Proc
 InstrEmpty = concat(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
 InstrIMP   = concat(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
 
-def traceBench(IMP=False, DWARF=True):
-    """ How does the proc reacts to a basic IMP """
-    
-    Offset = 0
 
-    Core = {}
+Core = {}
+Queue = []
+
+def init(IMP=False, DWARF=True, Offset=0):
+    
     if IMP:
         Core[Offset] = InstrIMP
     if DWARF:
@@ -22,39 +22,41 @@ def traceBench(IMP=False, DWARF=True):
         Core[Offset + 1] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(2), t_Mode.B_INDIRECT, Addr(2))
         Core[Offset + 2] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(-2), t_Mode.DIRECT, Addr())
     
+    Queue.insert(0, Offset)
+
+def traceBench():
+    """ How does the proc reacts to a basic IMP """  
+
     @instance
     def WriteCore():
         while True:
             yield clk_i.posedge
+            Offs = int(WOfs_i)
+            Addr = (PC_i + Offs) % CORESIZE
             if we_i:
                 if we_i != MARSparam.we.Full:
                     print "I'm misbehaving"
-                print "> %s @ %s" % (WData_i, (PC_i + int(WOfs_i)) % CORESIZE)
-                Core[(PC_i + int(WOfs_i)) % CORESIZE] = WData_i
+                print "> %s @ %s" % (Instr(val=int(WData_i)), Addr)
+                Core[Addr] = int(WData_i)
 
     @instance
     def ReadCore():
         while True:
             yield ROfs_i, PC_i
-            RData_i.next = Core.get((int(ROfs_i) + PC_i) % CORESIZE, InstrEmpty)
+            Offs = int(ROfs_i)
+            Addr = (PC_i + Offs) % CORESIZE
             try:
-                print "< @ %s: %s" % ((int(ROfs_i) + PC_i) % CORESIZE, Core[(int(ROfs_i) + PC_i) % CORESIZE])
+                RData_i.next = Core.get(Addr, InstrEmpty)
+                print "< @ %s: %s" % (Addr, Instr(val=Core[Addr]))
             except KeyError:
-                print "< @ %s ..." % ((int(ROfs_i) + PC_i) % CORESIZE)
-
-    Queue = []
-    Queue.insert(0, Offset)
+                RData_i.next = InstrEmpty
+                print "< @ %s ..." % (Addr)
 
     @instance
     def WriteQueue():
         while True:
             yield clk_i.posedge
-            if not clk_i:
-                raise Error
-            if IPOut1_i == 0:
-                print "baoum ! (%d) %s" % (len(Queue), we_i)
             if we1_i != 0:
-                print "hep"
                 Queue.insert(0, IPOut1_i.val)
                 if we2_i:
                     Queue.insert(0, IPOut2_i.val)
@@ -66,6 +68,7 @@ def traceBench(IMP=False, DWARF=True):
             if re_i:
                 Addr = Queue.pop()
                 if PC_i == Addr:
+                    # I had a trouble there when RData was not updates if PC does not change
                     RData_i.next = Core.get((int(ROfs_i) + PC_i) % CORESIZE, InstrEmpty)
                 PC_i.next = Addr
                 print  "PC: %s" % Addr
@@ -79,7 +82,7 @@ def traceBench(IMP=False, DWARF=True):
         rst_n_i.next = True
         # run
 
-        for i in range (200):
+        for i in range (8):
 
             clk_i.next = False
             yield delay(5)
@@ -87,7 +90,6 @@ def traceBench(IMP=False, DWARF=True):
             # do something
             req_i.next = False
             re_i.next = True
-            ROfs_i.next = 0
 
             clk_i.next = True
             yield delay(5)
@@ -120,11 +122,12 @@ def traceBench(IMP=False, DWARF=True):
     WData_i, RData_i = [Signal(intbv(InstrEmpty)) for i in range (2)]
     we_i = Signal(intbv(0))
 
-    dut = Proc(Instr_i, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, WOfs_i, WData_i, we_i, ROfs_i, RData_i,  clk_i, rst_n_i, req_i, ack_i)
+    dut = Proc(Instr_i, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, WOfs_i, WData_i, we_i, ROfs_i, RData_i, clk_i, rst_n_i, req_i, ack_i)
      
     return dut, test, ReadCore, WriteCore, ReadQueue, WriteQueue
 
 if __name__ == "__main__":
+    init()
     tb = traceSignals(traceBench)
     sim = Simulation(tb)
     sim.run(quiet=1)

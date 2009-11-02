@@ -10,53 +10,72 @@ import MARSparam
 from MARSparam import t_OpCode, t_Modifier, t_Mode
 from MARSparam import InstrWidth
 
-def EvalOp(Mod, Number, Ptr, WData, we, RData, clk):
+def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
     """
     Eval A operand (Or actually B operand)
 
     assumption:
-    Rdata = Core[Number + IP]
     WOfs == Number
 
 
-    We don'y take any reset as input as we don't keep any internal state ...
-
     """
 
-    @always(clk.posedge)
+    t_State = enum("IDLE", "COMPUTE", "READ")
+    state = Signal(t_State.IDLE)
+
+    @always(clk.posedge, rst_n)
     def fsm():
+        if not rst_n:
+            state.next = t_State.IDLE
+        elif clk:
+            if state == t_State.IDLE:
+                if req:
+                    state.next = t_State.COMPUTE
+                    ROfs.next = Number
+            elif state == t_State.COMPUTE:
+                state.next = t_State.READ
+                ROfs.next = Ptr
+            elif state == t_State.READ:
+                state.next = t_State.IDLE
+
+    @always(state)
+    def out():
         we.next = 0
+        if state == t_State.COMPUTE:
+            if Mod == t_Mode.IMMEDIATE:
+                Ptr.next = 0
+            elif Mod == t_Mode.DIRECT:
+                Ptr.next = Number
 
-        if Mod == t_Mode.IMMEDIATE:
-            Ptr.next = 0
-        elif Mod == t_Mode.DIRECT:
-            Ptr.next = Number
+            elif Mod == t_Mode.A_INDIRECT:
+                Ptr.next = MARSparam.Instr(val=int(RData)).ANumber + Number
+            elif Mod == t_Mode.A_INCREMENT:
+                Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number + 1
+                we.next = MARSparam.we.ANum
+                WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + 1
+            elif Mod == t_Mode.A_DECREMENT:
+                Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number - 1
+                we.next = MARSparam.we.ANum
+                WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] - 1
 
-        elif Mod == t_Mode.A_INDIRECT:
-            Ptr.next = MARSparam.Instr(val=int(RData)).ANumber + Number
-        elif Mod == t_Mode.A_INCREMENT:
-            Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number + 1
-            we.next = MARSparam.we.ANum
-            WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + 1
-        elif Mod == t_Mode.A_DECREMENT:
-            Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number - 1
-            we.next = MARSparam.we.ANum
-            WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] - 1
+            elif Mod == t_Mode.B_INDIRECT:
+                Ptr.next = MARSparam.Instr(val=int(RData)).BNumber + Number
+            elif Mod == t_Mode.B_INCREMENT:
+                Ptr.next = RData[MARSparam.AddrWidth:0] + Number + 1
+                we.next = MARSparam.we.BNum
+                WData.next = RData[MARSparam.AddrWidth:0] + 1
+            elif Mod == t_Mode.B_DECREMENT:
+                Ptr.next = RData[MARSparam.AddrWidth:0] + Number - 1
+                we.next = MARSparam.we.BNum
+                WData.next = RData[MARSparam.AddrWidth:0] - 1
+            else:
+                raise ValueError("Mod: %d not understood" % Mod)
+        elif state == t_State.READ:
+            ack.next = True    
+        elif state == t_State.IDLE:
+            ack.next = False
 
-        elif Mod == t_Mode.B_INDIRECT:
-            Ptr.next = MARSparam.Instr(val=int(RData)).BNumber + Number
-        elif Mod == t_Mode.B_INCREMENT:
-            Ptr.next = RData[MARSparam.AddrWidth:0] + Number + 1
-            we.next = MARSparam.we.BNum
-            WData.next = RData[MARSparam.AddrWidth:0] + 1
-        elif Mod == t_Mode.B_DECREMENT:
-            Ptr.next = RData[MARSparam.AddrWidth:0] + Number - 1
-            we.next = MARSparam.we.BNum
-            WData.next = RData[MARSparam.AddrWidth:0] - 1
-        else:
-            raise ValueError("Mod: %d not understood" % Mod)
-
-    return fsm
+    return fsm, out
 
 def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
     """
@@ -109,11 +128,11 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
 
         def op(OpCode, Num1, Num2):
             if OpCode == t_OpCode.ADD:
-                return Num1 + Num2
+                return (Num1 + Num2) % MARSparam.CORESIZE
             elif OpCode == t_OpCode.SUB:
-                return Num1 + MARSparam.CORESIZE - Num2
+                return (Num1 + MARSparam.CORESIZE - Num2) % MARSparam.CORESIZE
             elif OpCode == t_OpCode.MUL:
-                return Num1 * Num2
+                return (Num1 * Num2)  % MARSparam.CORESIZE
             elif OpCode == t_OpCode.DIV:
                 return Num1 / Num2
             elif OpCode == t_OpCode.MOD:
@@ -171,10 +190,11 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
                 WData.next = MARSparam.Instr(BNumber = op(OpCode, IRB.BNumber, IRA.BNumber))
                 we.next = MARSparam.we.B
             elif Modif == t_Modifier.AB:
-                WData.next = MARSparam.Instr(BNumber = op(OpCode,  IRB.ANumber, IRA.BNumber))
+                WData.next = MARSparam.Instr(BNumber = op(OpCode,  IRB.BNumber, IRA.ANumber))
+                print "Calculated: %s %s %s" % (IRB.BNumber, IRA.ANumber, WData.next)
                 we.next = MARSparam.we.AB
             elif Modif == t_Modifier.BA:
-                WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.BNumber, IRA.ANumber))
+                WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.BNumber))
                 we.next = MARSparam.we.BA
             elif Modif in (t_Modifier.F, 
                            t_Modifier.I):
@@ -211,18 +231,20 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
     BMode = Signal(intbv(0)[3:])
     BNumber = Signal(MARSparam.Addr())
 
-    APtr, BPtr = [Signal(MARSparam.Addr()) for i in range(2)]
+    APtr, BPtr, ROfs_evalopa, ROfs_evalopb = [Signal(MARSparam.Addr()) for i in range(4)]
 
     IRA, IRB = [Signal(MARSparam.Instr()) for i in range(2)]
 
     WData_evalopa, WData_evalopb, WData_outcore = [Signal(intbv(0)[MARSparam.InstrWidth:]) for i in range(3)]
 
     we_evalopa, we_evalopb, we_outcore = [Signal(intbv(0)[6:]) for i in range(3)]
+    
+    req_evalopa, ack_evalopa, req_evalopb, ack_evalopb = [Signal(bool()) for i in range(4)]
 
     we1_outqueue, we2_outqueue = [Signal(bool()) for i in range(2)]
 
-    EvalAOp = EvalOp(AMode, ANumber, APtr, WData_evalopa, we_evalopa, RData, clk)
-    EvalBOp = EvalOp(BMode, BNumber, BPtr, WData_evalopb, we_evalopb, RData, clk)
+    EvalAOp = EvalOp(AMode, ANumber, APtr, WData_evalopa, we_evalopa, ROfs_evalopa, RData, clk, rst_n, req_evalopa, ack_evalopa)
+    EvalBOp = EvalOp(BMode, BNumber, BPtr, WData_evalopb, we_evalopb, ROfs_evalopb, RData, clk, rst_n, req_evalopb, ack_evalopb)
     OutQueue_i = OutQueue(OpCode, APtr, PC, IPOut1, we1_outqueue, IPOut2, we2_outqueue, clk)
     OutCore_i = OutCore(OpCode, Modifier, IRA, IRB, we_outcore, WData_outcore, clk)
 
@@ -234,23 +256,28 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
         ANumber.next = Instr.ANumber
         BMode.next = Instr.BMode
         BNumber.next = Instr.BNumber
+        req_evalopb.next = ack_evalopa
+        req_evalopa.next = req
 
     @always(clk.posedge, rst_n.negedge)
     def fsm():
-        if not rst_n:
+        if rst_n == False:
             state.next = t_State.IDLE
         elif clk:
             if state == t_State.IDLE:
+                ack.next = False
                 if req:
                     state.next = t_State.EVALOPA
-                    ack.next = False
             elif state == t_State.EVALOPA:
                 # we could jump to REST if evalopa and evalopb 
                 # both don't write and if B is not dependant 
                 # on A's output
-                state.next = t_State.EVALOPB
+                if ack_evalopa:
+                    state.next = t_State.EVALOPB
             elif state == t_State.EVALOPB:
-                state.next = t_State.REST
+                if ack_evalopb:
+                    #IRB.next = MARSparam.Instr(val=int(RData))
+                    state.next = t_State.REST
             elif state == t_State.REST:
                 state.next = t_State.IDLE
                 ack.next = True
@@ -275,21 +302,29 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
             we.next = we_evalopb
             WData.next = WData_evalopb
             WOfs.next = BNumber
-            IRA.next = MARSparam.Instr(val=int(RData))
+            #IRA.next = MARSparam.Instr(val=int(RData))
         elif state == t_State.REST:
             we.next = we_outcore
             WData.next = WData_outcore
             WOfs.next = BPtr
             we1.next = we1_outqueue
             we2.next = we2_outqueue
-            IRB.next = MARSparam.Instr(val=int(RData))
 
     @always_comb
     def updateROfs():
-        """ Somehow I don't use that one, Can't reember right right now """
-        ROfs.next = APtr
-        ROfs.next = BPtr
-        print "%s %s %s " % (ROfs, APtr, BPtr)
+        if state == t_State.EVALOPA:
+            ROfs.next = ROfs_evalopa
+        elif state == t_State.EVALOPB:
+            ROfs.next = ROfs_evalopb
+        elif state == t_State.IDLE:
+            ROfs.next = 0
+
+    @always_comb
+    def updateIRX():
+        if state == t_State.EVALOPB:
+            IRB.next = MARSparam.Instr(val=int(RData))
+        if state == t_State.EVALOPA:
+            IRA.next = MARSparam.Instr(val=int(RData))
 
 
-    return EvalAOp, EvalBOp, OutQueue_i, OutCore_i, link, fsm, fsmcore
+    return EvalAOp, EvalBOp, OutQueue_i, OutCore_i, link, fsm, fsmcore, updateROfs, updateIRX
