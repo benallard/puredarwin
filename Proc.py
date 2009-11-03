@@ -85,18 +85,126 @@ def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
 
     @always(clk.posedge)
     def Out1():
+        PC1 = (PC + 1) % MARSparam.CORESIZE
+        PC2 = (PC + 2) % MARSparam.CORESIZE
+        PCRPA = (PC + RPA) % MARSparam.CORESIZE
         we1.next = True
         if OpCode == t_OpCode.DAT:
             we1.next = False
         elif OpCode in (t_OpCode.MOV,
-                      t_OpCode.ADD,
-                      t_OpCode.SUB,
-                      t_OpCode.MUL,
-                      t_OpCode.SPL,
-                      t_OpCode.NOP):
-            IPout1.next = (PC + 1) % MARSparam.CORESIZE
+                        t_OpCode.ADD,
+                        t_OpCode.SUB,
+                        t_OpCode.MUL,
+                        t_OpCode.SPL,
+                        t_OpCode.NOP):
+            IPout1.next = PC1
         elif OpCode == t_OpCode.JMP:
-            IPout1.next = (PC + RPA) % MARSparam.CORESIZE
+            IPout1.next = PCRPA
+        elif OpCode in (t_OpCode.JMZ,
+                        t_OpCode.JMN,
+                        t_OpCode.DJN):
+
+            def test(Number):
+                if OpCode == t_OpCode.JMZ:
+                    return Number == 0
+                elif OpCode == t_OpCode.JMN:
+                    return Number != 0
+                elif OpCode == t_OpCode.DJN:
+                    return (Number - 1) != 0
+
+            if Modifier in (t_Modifier.A,
+                            t_Modifier.BA):
+                if test(IRB.ANumber):
+                    IPOut1.next = PCRPA
+                else:
+                    IPOut1.next = PC1
+            if Modifier in (t_Modifier.B,
+                            t_Modifier.AB):
+                if test(IRB.BNumber):
+                    IPOut1.next = PCRPA
+                else:
+                    IPOut1.next = PC1
+            if Modifier in (t_Modifier.F,
+                            t_Modifier.X,
+                            t_Modifier.I):
+                if test(IRB.ANumber) and test(IRB.BNumber):
+                    IPOut1.next = PCRPA
+                else:
+                    IPOut1.next = PC1
+
+        elif OpCode == t_OpCode.CMP:
+            if Modifier == t_Modifier.A:
+                if IRA.ANumber == IRB.ANumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.B:
+                if IRA.BNumber == IRB.BNumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.AB:
+                if IRA.ANumber == IRB.BNumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.BA:
+                if IRA.BNumber == IRB.ANumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.F:
+                if (IRA.ANumber == IRB.ANumber) and (IRA.BNumber == IRB.BNumber):
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.X:
+                if (IRA.ANumber == IRB.BNumber) and (IRA.BNumber == IRB.ANumber):
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.I:
+                if IRA == IRB:
+                    IPout1.next = PC2
+                else:
+                    IPOut1.next = PC1
+
+        elif OpCode == t_OpCode.SNE:
+            if Modifier == t_Modifier.A:
+                if IRA.ANumber != IRB.ANumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.B:
+                if IRA.BNumber != IRB.BNumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.AB:
+                if IRA.ANumber != IRB.BNumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.BA:
+                if IRA.BNumber != IRB.ANumber:
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.F:
+                if (IRA.ANumber != IRB.ANumber) or (IRA.BNumber != IRB.BNumber):
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.X:
+                if (IRA.ANumber != IRB.BNumber) or (IRA.BNumber != IRB.ANumber):
+                    IPOut1.next = PC2
+                else:
+                    IPOut1.next = PC1
+            elif Modifier == t_Modifier.I:
+                if IRA != IRB:
+                    IPout1.next = PC2
+                else:
+                    IPOut1.next = PC1
         else:
             raise NotImplementedError("Queue: Only few OpCode are Implemented: not %s" % OpCode)
 
