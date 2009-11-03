@@ -106,7 +106,7 @@ class Instr(intbv):
         elif name == "BMode":
             return self[AddrWidth+3:AddrWidth]
         elif name == "BNumber":
-            return self[AddrWidth:]
+            return self[AddrWidth:0]
         else:
             return intbv.__getattr__(name)
 
@@ -122,7 +122,7 @@ class Instr(intbv):
         elif name == "BMode":
             self[AddrWidth+3:AddrWidth] = value
         elif name == "BNumber":
-            self[AddrWidth:] = value
+            self[AddrWidth:0] = value
         else:
             intbv.__setattr__(self, name,value)
 

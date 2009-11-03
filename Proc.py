@@ -20,7 +20,7 @@ def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
 
     """
 
-    t_State = enum("IDLE", "COMPUTE", "READ")
+    t_State = enum("IDLE", "SET", "COMPUTE", "READ")
     state = Signal(t_State.IDLE)
 
     @always(clk.posedge, rst_n)
@@ -30,17 +30,19 @@ def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
         elif clk:
             if state == t_State.IDLE:
                 if req:
-                    state.next = t_State.COMPUTE
-                    ROfs.next = Number
+                    state.next = t_State.SET
+            elif state == t_State.SET:
+                state.next = t_State.COMPUTE
             elif state == t_State.COMPUTE:
                 state.next = t_State.READ
-                ROfs.next = Ptr
             elif state == t_State.READ:
                 state.next = t_State.IDLE
 
     @always(state)
     def out():
         we.next = 0
+        if state == t_State.SET:
+            ROfs.next = Number
         if state == t_State.COMPUTE:
             if Mod == t_Mode.IMMEDIATE:
                 Ptr.next = 0
@@ -71,6 +73,7 @@ def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
             else:
                 raise ValueError("Mod: %d not understood" % Mod)
         elif state == t_State.READ:
+            ROfs.next = Ptr
             ack.next = True    
         elif state == t_State.IDLE:
             ack.next = False
@@ -269,10 +272,10 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
                 WData.next = MARSparam.Instr(BNumber=IRA.BNumber)
                 we.next = MARSparam.we.B
             elif Modif == t_Modifier.AB:
-                WData.next = MARSparam.Instr(ANumber=IRA.BNumber)
+                WData.next = MARSparam.Instr(BNumber=IRA.ANumber)
                 we.next = MARSparam.we.AB
             elif Modif == t_Modifier.BA:
-                WData.next = MARSparam.Instr(BNumber=IRA.Anumber)
+                WData.next = MARSparam.Instr(ANumber=IRA.Bnumber)
                 we.next = MARSparam.we.BA
             elif Modif == t_Modifier.F:
                 WData.next = MARSparam.Instr(ANumber=IRA.ANumber,
@@ -299,7 +302,7 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
                 we.next = MARSparam.we.B
             elif Modif == t_Modifier.AB:
                 WData.next = MARSparam.Instr(BNumber = op(OpCode,  IRB.BNumber, IRA.ANumber))
-                print "Calculated: %s %s %s" % (IRB.BNumber, IRA.ANumber, WData.next)
+                #print "Calculated: %s %s %s" % (IRB.BNumber, IRA.ANumber, WData.next)
                 we.next = MARSparam.we.AB
             elif Modif == t_Modifier.BA:
                 WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.BNumber))

@@ -12,7 +12,7 @@ InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIR
 Core = {}
 Queue = []
 
-def init(Imp=False, Dwarf=False, Gemini=True, Offset=0, Start=0):
+def init(Imp=False, Dwarf=False, Gemini=False, Mice=True, Offset=0, Start=0):
     
     if Imp:
         Core[Offset] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
@@ -32,6 +32,15 @@ def init(Imp=False, Dwarf=False, Gemini=True, Offset=0, Start=0):
         Core[Offset + 7] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(-5), t_Mode.DIRECT, Addr(0))
         Core[Offset + 8] = Instr(t_OpCode.MOV, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(99), t_Mode.DIRECT, Addr(93))
         Core[Offset + 9] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(93), t_Mode.DIRECT, Addr(0))
+    if Mice:
+        Core[Offset] = Instr(t_OpCode.MOV, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(12), t_Mode.DIRECT, Addr(-1))
+        Core[Offset + 1] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.B_INDIRECT, Addr(-2), t_Mode.B_DECREMENT, Addr(5))
+        Core[Offset + 2] = Instr(t_OpCode.DJN, t_Modifier.B, t_Mode.DIRECT, Addr(-1), t_Mode.DIRECT, Addr(-3))
+        Core[Offset + 3] = Instr(t_OpCode.SPL, t_Modifier.B, t_Mode.B_INDIRECT, Addr(3), t_Mode.DIRECT, Addr())
+        Core[Offset + 4] = Instr(t_OpCode.ADD, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(653), t_Mode.DIRECT, Addr(2))
+        Core[Offset + 5] = Instr(t_OpCode.JMZ, t_Modifier.B, t_Mode.DIRECT, Addr(-5), t_Mode.DIRECT, Addr(-6))
+        Core[Offset + 5] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.IMMEDIATE, Addr(), t_Mode.IMMEDIATE, Addr(833))
+        
 
     Queue.insert(0, Offset + Start)
 
@@ -42,13 +51,28 @@ def traceBench():
     def WriteCore():
         while True:
             yield clk_i.posedge
-            Offs = int(WOfs_i)
-            Addr = (PC_i + Offs) % CORESIZE
             if we_i:
+                Offs = int(WOfs_i)
+                Addr = (PC_i + Offs) % CORESIZE
                 if we_i != MARSparam.we.Full:
-                    print "I'm misbehaving"
-                print "> %s @ %s" % (Instr(val=int(WData_i)), Addr)
-                Core[Addr] = int(WData_i)
+                    Dest = Instr(val=Core.get(Addr,InstrEmpty))
+                    Src = Instr(val=int(WData_i))
+                    if we_i & MARSparam.we.OpCode:
+                        Dest.OpCode = Src.OpCode
+                    if we_i & MARSparam.we.Modif:
+                         Dest.Modifier = Src.Modifier
+                    if we_i & MARSparam.we.AMod:
+                         Dest.AMode = Src.AMode
+                    if we_i & MARSparam.we.ANum:
+                         Dest.ANumber = Src.ANumber
+                    if we_i & MARSparam.we.BMod:
+                         Dest.BMode = Src.BMode
+                    if we_i & MARSparam.we.BNum:
+                        Dest.BNumber = Src.BNumber
+                    Core[Addr] = Dest
+                else:
+                    Core[Addr] = int(WData_i)
+                print "> %s @ %s (%s)" % (Instr(val=Core[Addr]), Addr, bin(we_i))
 
     @instance
     def ReadCore():
@@ -57,7 +81,7 @@ def traceBench():
             Offs = int(ROfs_i)
             Addr = (PC_i + Offs) % CORESIZE
             try:
-                RData_i.next = Core.get(Addr, InstrEmpty)
+                RData_i.next = Core[Addr]
                 print "< @ %s: %s" % (Addr, Instr(val=Core[Addr]))
             except KeyError:
                 RData_i.next = InstrEmpty
@@ -93,7 +117,7 @@ def traceBench():
         rst_n_i.next = True
         # run
 
-        for i in range (8):
+        for i in range (300):
 
             clk_i.next = False
             yield delay(5)
@@ -138,7 +162,7 @@ def traceBench():
     return dut, test, ReadCore, WriteCore, ReadQueue, WriteQueue
 
 if __name__ == "__main__":
-    init()
+    init(Offset=CORESIZE-105)
     tb = traceSignals(traceBench)
     sim = Simulation(tb)
     sim.run(quiet=1)
