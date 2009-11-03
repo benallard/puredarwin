@@ -162,7 +162,7 @@ def traceBench():
     return dut, test, ReadCore, WriteCore, ReadQueue, WriteQueue
 
 if __name__ == "__main__":
-    init(Offset=CORESIZE-105)
+    init()
     tb = traceSignals(traceBench)
     sim = Simulation(tb)
     sim.run(quiet=1)

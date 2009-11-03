@@ -220,7 +220,7 @@ def OutQueue(OpCode, Modifier, IRA, IRB, RPA, PC, IPout1, we1, IPout2, we2, clk)
 
     return Out1, Out2
 
-def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
+def OutCore(OpCode, Modifier, IRA, IRB, we, WData, clk):
     """
     WPA is not used anymore at this stage
     RPA is only used to Queue
@@ -265,59 +265,80 @@ def OutCore(OpCode, Modif, IRA, IRB, we, WData, clk):
             pass
 
         elif OpCode == t_OpCode.MOV:
-            if Modif == t_Modifier.A:
+            if Modifier == t_Modifier.A:
                 WData.next = MARSparam.Instr(ANumber=IRA.Anumber)
                 we.next = MARSparam.we.A
-            elif Modif == t_Modifier.B:
+            elif Modifier == t_Modifier.B:
                 WData.next = MARSparam.Instr(BNumber=IRA.BNumber)
                 we.next = MARSparam.we.B
-            elif Modif == t_Modifier.AB:
+            elif Modifier == t_Modifier.AB:
                 WData.next = MARSparam.Instr(BNumber=IRA.ANumber)
                 we.next = MARSparam.we.AB
-            elif Modif == t_Modifier.BA:
+            elif Modifier == t_Modifier.BA:
                 WData.next = MARSparam.Instr(ANumber=IRA.Bnumber)
                 we.next = MARSparam.we.BA
-            elif Modif == t_Modifier.F:
+            elif Modifier == t_Modifier.F:
                 WData.next = MARSparam.Instr(ANumber=IRA.ANumber,
                                              BNumber=IRA.BNumber)
                 we.next = MARSparam.we.F
-            elif Modif == t_Modifier.X:
+            elif Modifier == t_Modifier.X:
                 WData.next = MARSparam.Instr(ANumber=IRA.Bnumber, 
                                              BNumber=IRA.ANumber)
                 we.next = MARSparam.we.X
-            elif Modif == t_Modifier.I:
+            elif Modifier == t_Modifier.I:
                 WData.next = IRA
                 we.next = MARSparam.we.I
             else:
-                raise ValueError("Modifier %d not supported" % Modif)
+                raise ValueError("Modifier %d not supported" % Modifier)
 
         elif OpCode in (t_OpCode.ADD,
                         t_OpCode.SUB,
                         t_OpCode.MUL):
-            if Modif == t_Modifier.A:
+            if Modifier == t_Modifier.A:
                 WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.ANumber))
                 we.next = MARSparam.we.A
-            elif Modif == t_Modifier.B:
+            elif Modifier == t_Modifier.B:
                 WData.next = MARSparam.Instr(BNumber = op(OpCode, IRB.BNumber, IRA.BNumber))
                 we.next = MARSparam.we.B
-            elif Modif == t_Modifier.AB:
+            elif Modifier == t_Modifier.AB:
                 WData.next = MARSparam.Instr(BNumber = op(OpCode,  IRB.BNumber, IRA.ANumber))
-                #print "Calculated: %s %s %s" % (IRB.BNumber, IRA.ANumber, WData.next)
                 we.next = MARSparam.we.AB
-            elif Modif == t_Modifier.BA:
+            elif Modifier == t_Modifier.BA:
                 WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.BNumber))
                 we.next = MARSparam.we.BA
-            elif Modif in (t_Modifier.F, 
+            elif Modifier in (t_Modifier.F, 
                            t_Modifier.I):
                 WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.ANumber),
                                              BNumber = op(OpCode, IRB.BNumber, IRA.BNumber))
                 we.next = MARSparam.we.F
-            elif Modif == t_Modifier.X:
+            elif Modifier == t_Modifier.X:
                 WData.next = MARSparam.Instr(BNumber = op(OpCode, IRB.ANumber, IRA.BNumber),
                                              ANumber = op(OpCode, IRB.BNumber, IRA.ANumber))
                 we.next = MARSparam.we.F
             else:
-                raise ValueError(Modif)
+                raise ValueError(Modifier)
+
+        elif OpCode == t_OpCode.DJN:
+            if Modifier in (t_Modifier.A, 
+                            t_Modifier.BA):
+                Num = (IRB.ANumber + MARSparam.CORESIZE - 1) % MARSparam.CORESIZE
+                WData.next = MARSparam.Instr(ANumber=Num)
+                IRB.next = MARSparam.Instr(val=int(IRB), ANumber=Num)
+                we.next = MARSparam.we.A
+            elif Modifier in (t_Modifier.B,
+                              t_Modifier.AB):
+                Num = (IRB.BNumber + MARSparam.CORESIZE - 1) % MARSparam.CORESIZE
+                WData.next = MARSparam.Instr(BNumber=Num)
+                IRB.next = MARSparam.Instr(val=int(IRB), BNumber=Num)
+                we.next = MARSparam.we.B
+            elif Modifier in (t_Modifier.F,
+                              t_Modifier.X,
+                              t_Modifier.I):
+                ANum = (IRB.ANumber + MARSparam.CORESIZE - 1) % MARSparam.CORESIZE
+                BNum = (IRB.BNumber + MARSparam.CORESIZE - 1) % MARSparam.CORESIZE
+                WData.next = MARSparam.Instr(ANumber=ANum, BNumber=BNum)
+                IRB.next = MARSparam.Instr(val=int(IRB), ANumber=Num, BNumber=BNum)
+                we.next = MARSparam.we.F
 
         else:
             raise NotImplementedError("Core: Only few OpCode are implemented ; not %s" % OpCode)
