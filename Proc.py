@@ -48,26 +48,26 @@ def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
                 Ptr.next = Number
 
             elif Mod == t_Mode.A_INDIRECT:
-                Ptr.next = MARSparam.Instr(val=int(RData)).ANumber + Number
+                Ptr.next = (MARSparam.Instr(val=int(RData)).ANumber + Number) % MARSparam.CORESIZE
             elif Mod == t_Mode.A_INCREMENT:
-                Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number + 1
+                Ptr.next = (MARSparam.Instr(val=int(RData)).ANumber + Number + 1) % MARSparam.CORESIZE
                 we.next = MARSparam.we.ANum
-                WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + 1
+                WData.next = (MARSparam.Instr(val=int(RData)).ANumber + 1) % MARSparam.CORESIZE
             elif Mod == t_Mode.A_DECREMENT:
-                Ptr.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] + Number - 1
+                Ptr.next = (MARSparam.Instr(val=int(RData)).ANumber + Number - 1) % MARSparam.CORESIZE
                 we.next = MARSparam.we.ANum
-                WData.next = RData[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] - 1
+                WData.next = (MARSparam.Instr(val=int(RData)).ANumber - 1) % MARSparam.CORESIZE
 
             elif Mod == t_Mode.B_INDIRECT:
-                Ptr.next = MARSparam.Instr(val=int(RData)).BNumber + Number
+                Ptr.next = (MARSparam.Instr(val=int(RData)).BNumber + Number) % MARSparam.CORESIZE
             elif Mod == t_Mode.B_INCREMENT:
-                Ptr.next = RData[MARSparam.AddrWidth:0] + Number + 1
+                Ptr.next = (MARSparam.Instr(val=int(RData)).BNumber + Number + 1) % MARSparam.CORESIZE
                 we.next = MARSparam.we.BNum
-                WData.next = RData[MARSparam.AddrWidth:0] + 1
+                WData.next = (MARSparam.Instr(val=int(RData)).BNumber + 1) % MARSparam.CORESIZE
             elif Mod == t_Mode.B_DECREMENT:
-                Ptr.next = RData[MARSparam.AddrWidth:0] + Number - 1
+                Ptr.next = (MARSparam.Instr(val=int(RData)).BNumber + Number - 1) % MARSparam.CORESIZE
                 we.next = MARSparam.we.BNum
-                WData.next = RData[MARSparam.AddrWidth:0] - 1
+                WData.next = (MARSparam.Instr(val=int(RData)).BNumber - 1) % MARSparam.CORESIZE
             else:
                 raise ValueError("Mod: %d not understood" % Mod)
         elif state == t_State.READ:
@@ -77,7 +77,7 @@ def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
 
     return fsm, out
 
-def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
+def OutQueue(OpCode, Modifier, IRA, IRB, RPA, PC, IPout1, we1, IPout2, we2, clk):
     """
     The Exec part that output to the TaskQueue
 
@@ -115,96 +115,96 @@ def OutQueue(OpCode, RPA, PC, IPout1, we1, IPout2, we2, clk):
             if Modifier in (t_Modifier.A,
                             t_Modifier.BA):
                 if test(IRB.ANumber):
-                    IPOut1.next = PCRPA
+                    IPout1.next = PCRPA
                 else:
-                    IPOut1.next = PC1
-            if Modifier in (t_Modifier.B,
-                            t_Modifier.AB):
+                    IPout1.next = PC1
+            elif Modifier in (t_Modifier.B,
+                              t_Modifier.AB):
                 if test(IRB.BNumber):
-                    IPOut1.next = PCRPA
+                    IPout1.next = PCRPA
                 else:
-                    IPOut1.next = PC1
-            if Modifier in (t_Modifier.F,
-                            t_Modifier.X,
-                            t_Modifier.I):
+                    IPout1.next = PC1
+            elif Modifier in (t_Modifier.F,
+                              t_Modifier.X,
+                              t_Modifier.I):
                 if test(IRB.ANumber) and test(IRB.BNumber):
-                    IPOut1.next = PCRPA
+                    IPout1.next = PCRPA
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
 
         elif OpCode == t_OpCode.CMP:
             if Modifier == t_Modifier.A:
                 if IRA.ANumber == IRB.ANumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.B:
                 if IRA.BNumber == IRB.BNumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.AB:
                 if IRA.ANumber == IRB.BNumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.BA:
                 if IRA.BNumber == IRB.ANumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.F:
                 if (IRA.ANumber == IRB.ANumber) and (IRA.BNumber == IRB.BNumber):
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.X:
                 if (IRA.ANumber == IRB.BNumber) and (IRA.BNumber == IRB.ANumber):
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.I:
                 if IRA == IRB:
                     IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
 
         elif OpCode == t_OpCode.SNE:
             if Modifier == t_Modifier.A:
                 if IRA.ANumber != IRB.ANumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.B:
                 if IRA.BNumber != IRB.BNumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.AB:
                 if IRA.ANumber != IRB.BNumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.BA:
                 if IRA.BNumber != IRB.ANumber:
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.F:
                 if (IRA.ANumber != IRB.ANumber) or (IRA.BNumber != IRB.BNumber):
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.X:
                 if (IRA.ANumber != IRB.BNumber) or (IRA.BNumber != IRB.ANumber):
-                    IPOut1.next = PC2
+                    IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
             elif Modifier == t_Modifier.I:
                 if IRA != IRB:
                     IPout1.next = PC2
                 else:
-                    IPOut1.next = PC1
+                    IPout1.next = PC1
         else:
             raise NotImplementedError("Queue: Only few OpCode are Implemented: not %s" % OpCode)
 
@@ -353,7 +353,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
 
     EvalAOp = EvalOp(AMode, ANumber, APtr, WData_evalopa, we_evalopa, ROfs_evalopa, RData, clk, rst_n, req_evalopa, ack_evalopa)
     EvalBOp = EvalOp(BMode, BNumber, BPtr, WData_evalopb, we_evalopb, ROfs_evalopb, RData, clk, rst_n, req_evalopb, ack_evalopb)
-    OutQueue_i = OutQueue(OpCode, APtr, PC, IPOut1, we1_outqueue, IPOut2, we2_outqueue, clk)
+    OutQueue_i = OutQueue(OpCode, Modifier, IRA, IRB, APtr, PC, IPOut1, we1_outqueue, IPOut2, we2_outqueue, clk)
     OutCore_i = OutCore(OpCode, Modifier, IRA, IRB, we_outcore, WData_outcore, clk)
 
     @always_comb

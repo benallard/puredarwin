@@ -6,23 +6,34 @@ from MARSparam import *
 
 from Proc import Proc
 
-InstrEmpty = concat(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
-InstrIMP   = concat(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
+InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
 
 
 Core = {}
 Queue = []
 
-def init(IMP=False, DWARF=True, Offset=0):
+def init(Imp=False, Dwarf=False, Gemini=True, Offset=0, Start=0):
     
-    if IMP:
-        Core[Offset] = InstrIMP
-    if DWARF:
+    if Imp:
+        Core[Offset] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
+    if Dwarf:
         Core[Offset] = Instr(t_OpCode.ADD, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(4),t_Mode.DIRECT, Addr(3))
         Core[Offset + 1] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(2), t_Mode.B_INDIRECT, Addr(2))
         Core[Offset + 2] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(-2), t_Mode.DIRECT, Addr())
-    
-    Queue.insert(0, Offset)
+    if Gemini:
+        Start = 2
+        Core[Offset] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.IMMEDIATE, Addr(), t_Mode.DIRECT, Addr())
+        Core[Offset + 1] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.IMMEDIATE, Addr(), t_Mode.DIRECT, Addr(99))
+        Core[Offset + 2] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.B_INDIRECT, Addr(-2), t_Mode.B_INDIRECT, Addr(-1))
+        Core[Offset + 3] = Instr(t_OpCode.SNE, t_Modifier.B, t_Mode.DIRECT, Addr(-3), t_Mode.IMMEDIATE, Addr(9))
+        Core[Offset + 4] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(4), t_Mode.DIRECT, Addr(3))
+        Core[Offset + 5] = Instr(t_OpCode.ADD, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(1), t_Mode.DIRECT, Addr(-5))
+        Core[Offset + 6] = Instr(t_OpCode.ADD, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(1), t_Mode.DIRECT, Addr(-5))
+        Core[Offset + 7] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(-5), t_Mode.DIRECT, Addr(0))
+        Core[Offset + 8] = Instr(t_OpCode.MOV, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(99), t_Mode.DIRECT, Addr(93))
+        Core[Offset + 9] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(93), t_Mode.DIRECT, Addr(0))
+
+    Queue.insert(0, Offset + Start)
 
 def traceBench():
     """ How does the proc reacts to a basic IMP """  
