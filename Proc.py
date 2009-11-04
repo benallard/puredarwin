@@ -422,27 +422,22 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
             
     @always(state)
     def fsmcore():
-        we.next = 0
         """
         Output Signals for the Core
         actually: a few big MUX
         """
+
+        we1.next = False
+        we2.next = False
         if state == t_State.IDLE:
-            we1.next = False
-            we2.next = False
+            pass
         elif state == t_State.EVALOPA:
-            we.next = we_evalopa
-            WData.next = WData_evalopa
             WOfs.next = ANumber
         elif state == t_State.EVALOPB:
-            we.next = we_evalopb
-            WData.next = WData_evalopb
             WOfs.next = BNumber
-            #IRA.next = MARSparam.Instr(val=int(RData))
         elif state == t_State.REST:
-            we.next = we_outcore
-            WData.next = WData_outcore
             WOfs.next = BPtr
+            # We have here luck as REST is a one shoot process ... 
             we1.next = we1_outqueue
             we2.next = we2_outqueue
 
@@ -457,10 +452,32 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
 
     @always_comb
     def updateIRX():
-        if state == t_State.EVALOPB:
-            IRB.next = MARSparam.Instr(val=int(RData))
         if state == t_State.EVALOPA:
             IRA.next = MARSparam.Instr(val=int(RData))
+        elif state == t_State.EVALOPB:
+            IRB.next = MARSparam.Instr(val=int(RData))
+
+    @always_comb
+    def updatewe():
+        if state == t_State.IDLE:
+            we.next = 0
+        if state == t_State.EVALOPA:
+            we.next = we_evalopa
+        elif state == t_State.EVALOPB:
+            we.next = we_evalopb
+        elif state == t_State.REST:
+            we.next = we_outcore
+
+    @always_comb
+    def updatewdata():
+        if state == t_State.IDLE:
+            pass
+        elif state == t_State.EVALOPA:
+            WData.next = WData_evalopa
+        elif state == t_State.EVALOPB:
+            WData.next = WData_evalopb
+        elif state == t_State.REST:
+            WData.next = WData_outcore
 
 
-    return EvalAOp, EvalBOp, OutQueue_i, OutCore_i, link, fsm, fsmcore, updateROfs, updateIRX
+    return EvalAOp, EvalBOp, OutQueue_i, OutCore_i, link, fsm, fsmcore, updateROfs, updateIRX, updatewe, updatewdata
