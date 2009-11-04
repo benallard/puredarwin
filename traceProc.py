@@ -4,6 +4,8 @@ from myhdl import *
 import MARSparam
 from MARSparam import *
 
+from random import randrange
+
 from Proc import Proc
 
 InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
@@ -12,7 +14,7 @@ InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIR
 Core = {}
 Queue = []
 
-def init(Imp=False, Dwarf=False, Gemini=False, Mice=True, Offset=0, Start=0):
+def init(Imp=False, Dwarf=False, Gemini=False, Mice=False, Paperone=False, Offset=0, Start=0):
     
     if Imp:
         Core[Offset] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
@@ -40,6 +42,17 @@ def init(Imp=False, Dwarf=False, Gemini=False, Mice=True, Offset=0, Start=0):
         Core[Offset + 4] = Instr(t_OpCode.ADD, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(653), t_Mode.DIRECT, Addr(2))
         Core[Offset + 5] = Instr(t_OpCode.JMZ, t_Modifier.B, t_Mode.DIRECT, Addr(-5), t_Mode.DIRECT, Addr(-6))
         Core[Offset + 6] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.IMMEDIATE, Addr(), t_Mode.IMMEDIATE, Addr(833))
+    if Paperone:
+        Core[Offset] = Instr(t_OpCode.SPL, t_Modifier.B, t_Mode.DIRECT, Addr(1), t_Mode.B_DECREMENT, Addr(300))
+        Core[Offset + 1] = Instr(t_OpCode.SPL, t_Modifier.B, t_Mode.DIRECT, Addr(1), t_Mode.B_DECREMENT, Addr(150))
+        Core[Offset + 2] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(-1), t_Mode.DIRECT, Addr())
+        Core[Offset + 3] = Instr(t_OpCode.SPL, t_Modifier.B, t_Mode.DIRECT, Addr(3620), t_Mode.IMMEDIATE, Addr())
+        Core[Offset + 4] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.B_INCREMENT, Addr(-1), t_Mode.A_INCREMENT, Addr(-1))
+        Core[Offset + 5] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(4), t_Mode.B_INCREMENT, Addr(2005))
+        Core[Offset + 6] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(3), t_Mode.A_INCREMENT, Addr(2042))
+        Core[Offset + 7] = Instr(t_OpCode.ADD, t_Modifier.A, t_Mode.IMMEDIATE, Addr(50), t_Mode.DIRECT, Addr(-4))
+        Core[Offset + 8] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(-5), t_Mode.B_DECREMENT, Addr(-5))
+        Core[Offset + 9] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.B_INCREMENT, Addr(2667), t_Mode.B_INCREMENT, Addr(-2666))
         
 
     Queue.insert(0, Offset + Start)
@@ -93,8 +106,10 @@ def traceBench():
             yield clk_i.posedge
             if we1_i != 0:
                 Queue.insert(0, IPOut1_i.val)
+                print "+1 (%d)" % len(Queue)
                 if we2_i:
                     Queue.insert(0, IPOut2_i.val)
+                    print "+1 (%d)" % len(Queue)
 
     @instance
     def ReadQueue():
@@ -102,6 +117,7 @@ def traceBench():
             yield clk_i.posedge
             if re_i:
                 Addr = Queue.pop()
+                print "-1 (%d)" % len(Queue)
                 if PC_i == Addr:
                     # I had a trouble there when RData was not updates if PC does not change
                     RData_i.next = Core.get((int(ROfs_i) + PC_i) % CORESIZE, InstrEmpty)
@@ -117,7 +133,7 @@ def traceBench():
         rst_n_i.next = True
         # run
 
-        for i in range (300):
+        for i in range (700):
 
             clk_i.next = False
             yield delay(5)
@@ -162,7 +178,7 @@ def traceBench():
     return dut, test, ReadCore, WriteCore, ReadQueue, WriteQueue
 
 if __name__ == "__main__":
-    init()
+    init(Paperone=True)
     tb = traceSignals(traceBench)
     sim = Simulation(tb)
     sim.run(quiet=1)

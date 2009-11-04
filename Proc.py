@@ -218,7 +218,7 @@ def OutQueue(OpCode, Modifier, IRA, IRB, RPA, PC, IPout1, we1, IPout2, we2, clk)
     @always(clk.posedge)
     def Out2():
         we2.next = False
-        if OpCode is t_OpCode.SPL:
+        if OpCode == t_OpCode.SPL:
             IPout2.next = (PC + RPA) % MARSparam.CORESIZE
             we2.next = True
 
