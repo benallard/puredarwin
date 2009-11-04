@@ -12,7 +12,7 @@ InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIR
 Core = {}
 Queue = []
 
-def init(Imp=False, Dwarf=False, Gemini=False, Mice=True, Offset=0, Start=0):
+def init(Imp=False, Dwarf=False, Gemini=True, Mice=False, Offset=0, Start=0):
     
     if Imp:
         Core[Offset] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))

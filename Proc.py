@@ -30,7 +30,11 @@ def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
         elif clk:
             if state == t_State.IDLE:
                 if req:
-                    state.next = t_State.SET
+                    if Mod in (t_Mode.IMMEDIATE,
+                               t_Mode.DIRECT):
+                        state.next = t_State.COMPUTE
+                    else:
+                        state.next = t_State.SET
             elif state == t_State.SET:
                 state.next = t_State.COMPUTE
             elif state == t_State.COMPUTE:
