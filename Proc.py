@@ -212,6 +212,24 @@ def OutQueue(OpCode, Modifier, IRA, IRB, RPA, PC, IPout1, we1, IPout2, we2, clk)
                     IPout1.next = PC2
                 else:
                     IPout1.next = PC1
+
+        elif OpCode in (t_OpCode.DIV,
+                        t_OpCode.MOD):
+            if Modifier in (t_Modifier.A,
+                            t_Modifier.AB,
+                            t_Modifier.F,
+                            t_Modifier.I,
+                            t_Modifier.X):
+                if IRA.ANumber == 0:
+                    we1.next = False
+            if Modifier in (t_Modifier.B,
+                            t_Modifier.BA,
+                            t_Modifier.F,
+                            t_Modifier.I,
+                            t_Modifier.X):
+                if IRA.BNumber == 0:
+                    we1.next = False
+
         else:
             raise NotImplementedError("Queue: Only few OpCode are Implemented: not %s" % OpCode)
 
