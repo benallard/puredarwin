@@ -12,7 +12,7 @@ InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIR
 Core = {}
 Queue = []
 
-def init(Imp=False, Dwarf=False, Gemini=True, Mice=False, Offset=0, Start=0):
+def init(Imp=False, Dwarf=False, Gemini=False, Mice=True, Offset=0, Start=0):
     
     if Imp:
         Core[Offset] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
@@ -39,7 +39,7 @@ def init(Imp=False, Dwarf=False, Gemini=True, Mice=False, Offset=0, Start=0):
         Core[Offset + 3] = Instr(t_OpCode.SPL, t_Modifier.B, t_Mode.B_INDIRECT, Addr(3), t_Mode.DIRECT, Addr())
         Core[Offset + 4] = Instr(t_OpCode.ADD, t_Modifier.AB, t_Mode.IMMEDIATE, Addr(653), t_Mode.DIRECT, Addr(2))
         Core[Offset + 5] = Instr(t_OpCode.JMZ, t_Modifier.B, t_Mode.DIRECT, Addr(-5), t_Mode.DIRECT, Addr(-6))
-        Core[Offset + 5] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.IMMEDIATE, Addr(), t_Mode.IMMEDIATE, Addr(833))
+        Core[Offset + 6] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.IMMEDIATE, Addr(), t_Mode.IMMEDIATE, Addr(833))
         
 
     Queue.insert(0, Offset + Start)
@@ -72,7 +72,7 @@ def traceBench():
                     Core[Addr] = Dest
                 else:
                     Core[Addr] = int(WData_i)
-                print "> %s @ %s (%s)" % (Instr(val=Core[Addr]), Addr, bin(we_i))
+                print "*-->\t%s\t@ %s (%s)" % (Instr(val=Core[Addr]), Addr, bin(we_i))
 
     @instance
     def ReadCore():
@@ -82,10 +82,10 @@ def traceBench():
             Addr = (PC_i + Offs) % CORESIZE
             try:
                 RData_i.next = Core[Addr]
-                print "< @ %s: %s" % (Addr, Instr(val=Core[Addr]))
+                print "<--*\t@ %s\t\t%s" % (Addr, Instr(val=Core[Addr]))
             except KeyError:
                 RData_i.next = InstrEmpty
-                print "< @ %s ..." % (Addr)
+                print "<--*\t@ %s\t\t..." % (Addr)
 
     @instance
     def WriteQueue():
