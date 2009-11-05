@@ -141,6 +141,7 @@ def traceBench():
             # do something
             req_i.next = False
             re_i.next = True
+            ROfs.next = 0
 
             clk_i.next = True
             yield delay(5)
