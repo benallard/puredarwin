@@ -13,7 +13,7 @@ InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIR
 def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
     """ MARS is the reunion of the modules """  
 
-    t_State=enum("IDLE", "FETCH", "PROC")
+    t_State=enum("IDLE", "LOAD", "FETCH", "PROC")
 
     state = Signal(t_State.IDLE)
     lastWarrior, Warrior = [Signal(intbv(0, min=0, max=nbWarriors)) for i in range(2)]
@@ -30,7 +30,9 @@ def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
             if state == t_State.IDLE:
                 ack.next = False
                 if req:
-                    state.next = t_State.FETCH
+                    state.next = t_State.LOAD
+            elif state == t_State.LOAD:
+                state.next = t_State.FETCH
             elif state == t_State.FETCH:
 
                 if Warrior + 1 == nbWarriors:
