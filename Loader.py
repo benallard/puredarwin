@@ -49,7 +49,7 @@ def Rx(Rx, data, clk, ack, nbBits, baudrate, parity, clkrate):
         elif state == t_State.RECEIVE:
             ack.next = False
             time.next = time + 1
-            if time == sampling_time:
+            if time == sampling_time-1:
                 time.next = 0
                 bitReceived.next = bitReceived + 1
                 print "sampling %d: %d" % (bitReceived, Rx)

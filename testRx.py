@@ -62,7 +62,10 @@ class testRx(TestCase):
 
         clkPeriod = 10 # ns
 
-        period = int(1e9 / 9600)
+        baudrate = 960000
+        nbBits = 328
+
+        period = int(1e9 / baudrate)
 
         def clkDrv(clk):
             while True:
@@ -71,7 +74,7 @@ class testRx(TestCase):
 
         def test(Tx, data, ack, nbBits):
             Tx.next = True
-            for i in range (20):
+            for i in range (5):
                 yield delay(randrange(70))
                 parity = True
                 totransmit = intbv(val=randrange(2**nbBits))
@@ -99,10 +102,10 @@ class testRx(TestCase):
             raise StopSimulation
                     
         Rx_i, ack_i, clk_i = [Signal(bool()) for i in range(3)]
-        data_i = Signal(intbv()[7:])
+        data_i = Signal(intbv()[nbBits:])
 
-        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, nbBits=7, baudrate=9600, parity=t_Parity.ODD, clkrate=1e9/clkPeriod)
-        check = test(Rx_i, data_i, ack_i, 7)
+        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, nbBits=nbBits, baudrate=baudrate, parity=t_Parity.ODD, clkrate=1e9/clkPeriod)
+        check = test(Rx_i, data_i, ack_i, nbBits)
         clock = clkDrv(clk_i)
         
         sim = Simulation(dut, check, clock)
