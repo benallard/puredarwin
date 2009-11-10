@@ -141,7 +141,7 @@ def traceBench():
             # do something
             req_i.next = False
             re_i.next = True
-            ROfs.next = 0
+            ROfs_i.next = 0
 
             clk_i.next = True
             yield delay(5)
@@ -179,7 +179,7 @@ def traceBench():
     return dut, test, ReadCore, WriteCore, ReadQueue, WriteQueue
 
 if __name__ == "__main__":
-    init(Mice=True)
+    init(Paperone=True)
     tb = traceSignals(traceBench)
     sim = Simulation(tb)
     sim.run(quiet=1)

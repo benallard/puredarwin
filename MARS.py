@@ -31,8 +31,16 @@ def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
                 ack.next = False
                 if req:
                     state.next = t_State.LOAD
+                    req_load.next = True
             elif state == t_State.LOAD:
-                state.next = t_State.FETCH
+                req_load.next = False
+
+                # How to load ?
+                # Where to take the data from ?
+                # Which random factor to use ? LFSR ?
+
+                if ack_load:
+                    state.next = t_State.FETCH
             elif state == t_State.FETCH:
 
                 if Warrior + 1 == nbWarriors:
@@ -51,6 +59,7 @@ def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
                     Instr_i.next = RData
                     req_proc.next = True
             elif state == t_State.PROC:
+                req_proc.next = False
                 if ack_proc:
                     if Time < maxTime:
                         t_State.next = t_State.FETCH
@@ -69,23 +78,31 @@ def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
         elif state == t_Stat.PROC:
             pass
 
-#    @always(state, ROfs_proc)
-#    def updateROfs():
-#        if state == t_State.FETCH:
-#            ROfs.next = 0
-#        else:
-#            ROfs.next = ROfs_proc
+    @always_comb
+    def updatewe1():
+        if state == t_State.LOAD:
+            we1_i.next = we1_load
+        else:
+            we1_i.next = we1_proc
 
-    PC_i, IPOut1_i, IPOut2_i, WOfs_i, ROfs_proc, ROfs = [Signal(Addr()) for i in range (6)]
-    we1_i, we2_i, req_proc, ack_proc, re_i, empty_i = [Signal(bool()) for i in range(6)]
+    @always_comb
+    def updateIP1():
+        if state == t_State.LOAD:
+            IP1_i.next = IP1_load
+        else:
+            IP1_i.next = IP1_proc
+
+
+    PC_i, IP1_proc, IP1_i, IP2_i, WOfs_i, ROfs = [Signal(Addr()) for i in range (7)]
+    we1_i, we1_load, we1_proc, we2_i, req_proc, ack_proc, re_i, empty_i = [Signal(bool()) for i in range(8)]
     Instr_i = Signal(Instr())
     WData_i, RData_i = [Signal(intbv(InstrEmpty)) for i in range (2)]
     we_i = Signal(intbv(0))
 
-    Proc_i = Proc(Instr_i, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, WOfs_i, WData_i, we_i, ROfs, RData_i, clk, rst_n, req_proc, ack_proc)
+    Proc_i = Proc(Instr=Instr_i, PC=PC_i, IPOut1=IP1_proc, we1=we1_proc, IPOut2=IP2_i, we2=we2_i, WOfs=WOfs_i, WData=WData_i, we=we_i, ROfs=ROfs, RData=RData_i, clk=clk, rst_n=rst_n, req=req_proc, ack=ack_proc)
     
     Core_i = Core(pc=PC_i, WOfs=WOfs_i, din=WData_i, ROfs=ROfs, dout=RData_i, we=we_i, clk=clk, rst_n=rst_n, maxSize=CORESIZE)
 
-    Queue_i = TaskQueue(Warrior=Warrior,IPin1=IPOut1_i, IPin2=IPOut2_i, IPout=PC_i, re=re_i, we1=we1_i, we2=we2_i, empty=empty_i, clk=clk, rst_n=rst_n, maxWarriors=nbWarriors)
+    Queue_i = TaskQueue(Warrior=Warrior,IPin1=IP1_i, IPin2=IP2_i, IPout=PC_i, re=re_i, we1=we1_i, we2=we2_i, empty=empty_i, clk=clk, rst_n=rst_n, maxWarriors=nbWarriors)
      
-    return Proc_i, Core_i, Queue_i, fsm, ctrl#, updateROfs
+    return Proc_i, Core_i, Queue_i, fsm, ctrl, updatewe1, updateIP1
