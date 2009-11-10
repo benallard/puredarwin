@@ -38,9 +38,9 @@ def Rx(Rx, data, clk, ack, nbBits, baudrate, parity, clkrate):
                 bitReceived.next = 0
                 time.next = sampling_time // 2
                 if parity == t_Parity.EVEN:
-                    parity_bit.next = False
-                elif parity == t_Parity.ODD:
                     parity_bit.next = True
+                elif parity == t_Parity.ODD:
+                    parity_bit.next = False
         elif state == t_State.DELAY:
             time.next = time + 1
             if time == sampling_time:
@@ -52,7 +52,6 @@ def Rx(Rx, data, clk, ack, nbBits, baudrate, parity, clkrate):
             if time == sampling_time-1:
                 time.next = 0
                 bitReceived.next = bitReceived + 1
-                print "sampling %d: %d" % (bitReceived, Rx)
                 if bitReceived == nbBits: # parity bit
                     if parity == t_Parity.NO:
                         state.next = t_State.WAIT
