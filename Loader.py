@@ -96,8 +96,20 @@ def Rx(Rx, data, clk, ack, nbBits, baudrate, parity, clkrate):
     return rx
 
 def RNG(out, clk, rst_n):
-    """ My LFSR """
-    pass
+    """
+    My LFSR
+
+    20 bits LFSR XNOR(20, 17)
+    """
+
+    @always(clk.posedge, rst_n.negedge)
+    def generate():
+        if not rst_n:
+            out.next = 0xa9e1b
+        elif clk:
+            out.next = out[19:] * 2 + (out[19] ^ out[16])
+
+    return generate
 
 def Loader(Rx, we, Dout, we1, IP1, clk, rst_n, req, ack, baudrate):
     pass
