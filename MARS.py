@@ -31,16 +31,15 @@ def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
                 ack.next = False
                 if req:
                     state.next = t_State.LOAD
+                    Warrior.next = 0
                     req_load.next = True
             elif state == t_State.LOAD:
                 req_load.next = False
 
-                # How to load ?
-                # Where to take the data from ?
-                # Which random factor to use ? LFSR ?
+                if Warrior + 1 == nbWarriors:
+                    if ack_load:
+                        state.next = t_State.FETCH
 
-                if ack_load:
-                    state.next = t_State.FETCH
             elif state == t_State.FETCH:
 
                 if Warrior + 1 == nbWarriors:
