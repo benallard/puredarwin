@@ -6,6 +6,8 @@ and generate the Random position through a LFSR
 
 """
 
+import MARSparam
+
 class ASCII:
     NULL = 0x00
     SOH  = 0x01
@@ -156,7 +158,7 @@ def Loader(rs232_Rx, Warrior, we, Dout, we1, IP1, clk, rst_n, req, ack, baudrate
     The loader will be called once for all Warriors, then the Warriors will be sent over RS232.
     """
 
-    random = Signal(intbv()[20:])
+    random = Signal(intbv(0)[20:])
 
     t_State = enum("IDLE","THINK", "RECEIVE", "WRITE")
 
@@ -172,8 +174,8 @@ def Loader(rs232_Rx, Warrior, we, Dout, we1, IP1, clk, rst_n, req, ack, baudrate
                 pass
 
             elif state == t_State.THINK:
-                if Warrior != maxWarriors
-                    state.next = t_State.RECEIVE:
+                if Warrior != maxWarriors:
+                    state.next = t_State.RECEIVE
                 else:
                     state.next = IDLE
 
@@ -200,7 +202,11 @@ def Loader(rs232_Rx, Warrior, we, Dout, we1, IP1, clk, rst_n, req, ack, baudrate
             we.next = True
             Dout.next = data_i
 
+    data_i = Signal(intbv(0)[MARSparam.InstrWidth:])
 
 
     RNG_i = RNG(random, clk, rst_n)
-    Rx_i = Rx(rs232_Rx, data_i, vlk, rst_n, )
+    # 1e9: ns;  10: clk @ 10 ns
+    Rx_i = Rx(rs232_Rx, data_i, clk, ack, rst_n, MARSparam.InstrWidth, baudrate, t_Parity.NO, 1e9/10 )
+
+    return ctrl, state, RNG_i, Rx_i
