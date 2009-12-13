@@ -78,19 +78,12 @@ def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
             pass
 
     @always_comb
-    def updatewe1():
+    def updateval():
+        IP1_i.next = IP1_proc
+        we1_i.next = we1_proc
         if state == t_State.LOAD:
             we1_i.next = we1_load
-        else:
-            we1_i.next = we1_proc
-
-    @always_comb
-    def updateIP1():
-        if state == t_State.LOAD:
             IP1_i.next = IP1_load
-        else:
-            IP1_i.next = IP1_proc
-
 
     PC_i, IP1_proc, IP1_i, IP2_i, WOfs_i, ROfs = [Signal(Addr()) for i in range (7)]
     we1_i, we1_load, we1_proc, we2_i, req_proc, ack_proc, re_i, empty_i = [Signal(bool()) for i in range(8)]
@@ -104,4 +97,4 @@ def MARS(clk, rst_n, req, ack, draw, Winner, nbWarriors, maxTime):
 
     Queue_i = TaskQueue(Warrior=Warrior,IPin1=IP1_i, IPin2=IP2_i, IPout=PC_i, re=re_i, we1=we1_i, we2=we2_i, empty=empty_i, clk=clk, rst_n=rst_n, maxWarriors=nbWarriors)
      
-    return Proc_i, Core_i, Queue_i, fsm, ctrl, updatewe1, updateIP1
+    return Proc_i, Core_i, Queue_i, fsm, ctrl, updateval
