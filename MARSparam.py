@@ -129,8 +129,8 @@ class Instr(intbv):
     def __str__(self):
         return "%s_%s_%s_%s_%s_%s" % (self.OpCode, self.Modifier, self.AMode, self.ANumber, self.BMode, self.BNumber)
 
-#    def __copy__(self):
-#        return Instr(self)
+    def __copy__(self):
+        return Instr(val=self)
 
-#    def __deepcopy__(self, visit):
-#        return Instr(self)
+    def __deepcopy__(self, visit):
+        return Instr(val=self)

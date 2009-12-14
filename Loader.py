@@ -6,6 +6,42 @@ and generate the Random position through a LFSR
 
 """
 
+import MARSparam
+
+class ASCII:
+    NULL = 0x00
+    SOH  = 0x01
+    STX  = 0x02
+    ETX  = 0x03
+    EOT  = 0x04 # End of transmission
+    ENQ  = 0x05
+    ACK  = 0x06
+    BEL  = 0x07
+    BS   = 0x08
+    TAB  = 0x09
+    LF   = 0x0A
+    VT   = 0x0B
+    FF   = 0x0C
+    CR   = 0x0D
+    SO   = 0x0E
+    SI   = 0x0F
+    DLE  = 0x10
+    DC1  = 0x11
+    DC2  = 0x12
+    DC3  = 0x13
+    DC4  = 0x14
+    NAK  = 0x15
+    SYN  = 0x16
+    ETB  = 0x17
+    CAN  = 0x18
+    EM   = 0x19
+    SUB  = 0x1A
+    ESC  = 0x1B
+    FS   = 0x1C
+    GS   = 0x1D
+    RS   = 0x1E
+    US   = 0x1F
+
 from myhdl import *
 
 t_Parity = enum("EVEN", "ODD", "MARK", "SPACE", "NO")
@@ -122,16 +158,55 @@ def Loader(rs232_Rx, Warrior, we, Dout, we1, IP1, clk, rst_n, req, ack, baudrate
     The loader will be called once for all Warriors, then the Warriors will be sent over RS232.
     """
 
-    random = Signal(intbv()[20:])
+    random = Signal(intbv(0)[20:])
 
     t_State = enum("IDLE","THINK", "RECEIVE", "WRITE")
+
+    state = Signal(t_State.IDLE)
 
     @always(clk.posedge, rst_n.negedge)
     def ctrl():
         if not rst_n:
-            pass
+            state.next = t_State.IDLE
+
         elif clk:
+            if state == t_State.IDLE:
+                pass
+
+            elif state == t_State.THINK:
+                if Warrior != maxWarriors:
+                    state.next = t_State.RECEIVE
+                else:
+                    state.next = IDLE
+
+            elif state == t_State.RECEIVE:
+                pass
+
+            elif state == t_State.WRITE:
+                if data_i != ASCII.EOT:
+                    state.next = t_State.RECEIVE
+                else:
+                    state.next = t_State.THINK
+
+    @always(state)
+    def state():
+        we.next = False
+        we1.next = False
+        if state == t_State.IDLE:
             pass
+        elif state == t_State.THINK:
+            we1.next = Address_i
+        elif state == t_State.RECEIVE:
+            pass
+        elif state == t_State.WRITE:
+            we.next = True
+            Dout.next = data_i
+
+    data_i = Signal(intbv(0)[MARSparam.InstrWidth:])
+
 
     RNG_i = RNG(random, clk, rst_n)
-    Rx_i = Rx(rs232_Rx, data_i, vlk, rst_n, )
+    # 1e9: ns;  10: clk @ 10 ns
+    Rx_i = Rx(rs232_Rx, data_i, clk, ack, rst_n, MARSparam.InstrWidth, baudrate, t_Parity.NO, 1e9/10 )
+
+    return ctrl, state, RNG_i, Rx_i
