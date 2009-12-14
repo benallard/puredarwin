@@ -58,7 +58,7 @@ def Rx(Rx, data, clk, ack, rst_n, nbBits, baudrate, parity, clkrate):
 
     data_i = Signal(intbv(0)[nbBits:])
 
-    bitReceived = Signal(intbv(0, min=0, max=nbBits+3))
+    bitReceived = Signal(intbv(0, min=0, max=nbBits+4))
     time = Signal(intbv(0,min=0, max=sampling_time+2))
 
     parity_bit = Signal(bool())
@@ -74,6 +74,7 @@ def Rx(Rx, data, clk, ack, rst_n, nbBits, baudrate, parity, clkrate):
             if state == t_State.WAIT:
                 parity_ok.next = False
                 if Rx == False:
+                    # start bit
                     state.next = t_State.DELAY
                     bitReceived.next = 0
                     time.next = sampling_time // 2
@@ -84,58 +85,130 @@ def Rx(Rx, data, clk, ack, rst_n, nbBits, baudrate, parity, clkrate):
 
             elif state == t_State.DELAY:
                 time.next = time + 1
-                if time == sampling_time:
+                if time == sampling_time-1:
                     time.next = 0
                     state.next = t_State.RECEIVE
 
             elif state == t_State.RECEIVE:
                 ack.next = False
                 time.next = time + 1
-                if time == sampling_time-1:
-                    time.next = 0
-                    bitReceived.next = bitReceived + 1
-                    if bitReceived == nbBits: # parity bit
-                        if parity == t_Parity.NO:
-                            state.next = t_State.WAIT
-                            if Rx: # stop bit
-                                ack.next = True
-                                data.next = data_i
-                                data_i.next = 0
-                            else:
-                                ack.next = False
-                        elif parity == t_Parity.MARK:
-                            if Rx:
-                                parity_ok.next = True
-                            else:
-                                parity_ok.next = False
-                        elif parity == t_Parity.SPACE:
-                            if Rx:
-                                parity_ok.next = False
-                            else:
-                                parity_ok.next = True
-                        else:
-                            if parity_bit == Rx:
-                                parity_ok.next = True
-                            else:
-                                parity_ok.next = False
-
-                    elif  bitReceived == nbBits + 1: # stop bit
-                        if parity == t_Parity.NO:
-                            raise Error("Shouldn't be there")
+                state.next = t_State.DELAY
+                bitReceived.next = bitReceived + 1
+                if bitReceived == 0:
+                    # start bit
+                    pass
+                elif bitReceived == nbBits+1: # parity bit
+                    if parity == t_Parity.NO:
                         state.next = t_State.WAIT
-                        if Rx:
-                            ack.next = parity_ok
+                        if Rx: # stop bit
+                            ack.next = True
                             data.next = data_i
                             data_i.next = 0
                         else:
                             ack.next = False
-                    else: # usual communication
-                        parity_bit.next = parity_bit ^ Rx 
-                        data_i.next = int(Rx) * (2**(nbBits-1)) +  data_i[nbBits:1]
-#                        data_i.next = concat(intbv(Rx.val)[1:], data_i.val[nbBits-1:])
+                    elif parity == t_Parity.MARK:
+                        if Rx:
+                            parity_ok.next = True
+                        else:
+                            parity_ok.next = False
+                    elif parity == t_Parity.SPACE:
+                        if Rx:
+                            parity_ok.next = False
+                        else:
+                            parity_ok.next = True
+                    else:
+                        if parity_bit == Rx:
+                            parity_ok.next = True
+                        else:
+                            parity_ok.next = False
+
+                elif  bitReceived == nbBits + 2: # stop bit
+                    if parity == t_Parity.NO:
+                        raise Error("Shouldn't be there")
+                    state.next = t_State.WAIT
+                    if Rx:
+                        ack.next = parity_ok
+                        data.next = data_i
+                        data_i.next = 0
+                    else:
+                        ack.next = False
+                else: # usual communication
+                    parity_bit.next = parity_bit ^ Rx 
+                    data_i.next = int(Rx) * (2**(nbBits-1)) +  data_i[nbBits:1]
+            #                        data_i.next = concat(intbv(Rx.val)[1:], data_i.val[nbBits-1:])
             
 
     return rx
+
+
+def Tx(Tx, data, clk, req, ack, rst_n, nbBits, baudrate, parity, clkrate):
+    """ RS232 Transmitor """
+    t_State = enum("WAIT", "DELAY", "SEND")
+    sampling_time =  int(clkrate / baudrate)
+
+    state = Signal(t_State.WAIT)
+
+    bitSent = Signal(intbv(0, min=0, max=nbBits+4))
+    time = Signal(intbv(0,min=0, max=sampling_time+2))
+
+    parity_bit = Signal(bool())
+    
+    @always(clk.posedge, rst_n.negedge)
+    def tx():
+        if not rst_n:
+            state.next = t_State.WAIT
+        elif clk:
+            if state == t_State.WAIT:
+                if req:
+                    data_i.next = data
+                    bitSent.next = 0
+                    state.next = t_State.SEND
+                    Tx.next = False
+                    time.next = sampling_time // 2
+                    if parity == t_Parity.EVEN:
+                        parity_bit.next = True
+                    elif parity == t_Parity.ODD:
+                        parity_bit.next = False
+
+            elif state == t_State.DELAY:
+                time.next = time + 1
+                if time == sampling_time-1:
+                    time.next = 0
+                    state.next = t_State.SEND
+
+            elif state == t_State.SEND:
+                ack.next = False
+                time.next = time + 1
+                state.next = t_State.DELAY
+                bitSent.next = bitSent + 1
+                if bitSent == 0:
+                    # start bit
+                    Tx.next = False
+                if bitSent == nbBits+1: # parity bit
+                    if parity == t_Parity.NO:
+                        # stop bit
+                        state.next = t_State.WAIT
+                        Tx.next = True
+                        ack.next = True
+                    elif parity == t_Parity.MARK:
+                        Tx.next = True
+                    elif parity == t_Parity.SPACE:
+                        Tx.next = False
+                    else:
+                        Tx.next = parity_bit
+
+                elif  bitSent == nbBits + 2: # stop bit
+                    if parity == t_Parity.NO:
+                        raise Error("Shouldn't be there")
+                    state.next = t_State.WAIT
+                    Tx.next = True
+                        ack.next = True
+
+                else: # usual communication
+                    Tx.next = data_i[bitSent - 1]
+                    parity_bit.next = parity_bit ^ Tx.next 
+                    
+    return tx
 
 def RNG(out, clk, rst_n):
     """
