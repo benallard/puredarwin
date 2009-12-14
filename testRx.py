@@ -48,7 +48,9 @@ class testRx(TestCase):
         Rx_i, ack_i, clk_i = [Signal(bool()) for i in range(3)]
         data_i = Signal(intbv()[4:])
 
-        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, nbBits=4, baudrate=9600000, parity=t_Parity.NO, clkrate=1e9/clkPeriod)
+        rst_n_i = Signal(bool(True))
+
+        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, rst_n=rst_n_i, nbBits=4, baudrate=9600000, parity=t_Parity.NO, clkrate=1e9/clkPeriod)
         check = test(Rx_i, data_i, ack_i, 4)
         clock = clkDrv(clk_i)
         
@@ -104,7 +106,9 @@ class testRx(TestCase):
         Rx_i, ack_i, clk_i = [Signal(bool()) for i in range(3)]
         data_i = Signal(intbv()[nbBits:])
 
-        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, nbBits=nbBits, baudrate=baudrate, parity=t_Parity.ODD, clkrate=1e9/clkPeriod)
+        rst_n_i = Signal(bool(True))
+
+        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i,rst_n = rst_n_i, nbBits=nbBits, baudrate=baudrate, parity=t_Parity.ODD, clkrate=1e9/clkPeriod)
         check = test(Rx_i, data_i, ack_i, nbBits)
         clock = clkDrv(clk_i)
         
@@ -154,7 +158,9 @@ class testRx(TestCase):
         Rx_i, ack_i, clk_i = [Signal(bool()) for i in range(3)]
         data_i = Signal(intbv()[nbBits:])
 
-        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, nbBits=nbBits, baudrate=baudrate, parity=t_Parity.ODD, clkrate=1e9/clkPeriod)
+        rst_n_i = Signal(bool(True))
+
+        dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, rst_n = rst_n_i, nbBits=nbBits, baudrate=baudrate, parity=t_Parity.ODD, clkrate=1e9/clkPeriod)
         check = test(Rx_i, data_i, ack_i, nbBits)
         clock = clkDrv(clk_i)
 
