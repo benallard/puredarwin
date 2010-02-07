@@ -88,10 +88,13 @@ def OutQueue(OpCode, Modifier, IRA, IRB, RPA, PC, IPout1, we1, IPout2, we2, clk)
     """
     The Exec part that output to the TaskQueue
 
+    output: IPout1, IPout2, we1, we2
+
     """
 
     @always(clk.posedge)
     def Out1():
+        """ output IPout1 and we1 """
         PC1 = (PC + 1) % MARSparam.CORESIZE
         PC2 = (PC + 2) % MARSparam.CORESIZE
         PCRPA = (PC + RPA) % MARSparam.CORESIZE
@@ -235,6 +238,7 @@ def OutQueue(OpCode, Modifier, IRA, IRB, RPA, PC, IPout1, we1, IPout2, we2, clk)
 
     @always(clk.posedge)
     def Out2():
+        """ output IPout2 and we2 """
         we2.next = False
         if OpCode == t_OpCode.SPL:
             IPout2.next = (PC + RPA) % MARSparam.CORESIZE

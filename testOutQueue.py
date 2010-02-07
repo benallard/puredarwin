@@ -33,7 +33,7 @@ class testOutQueueProperties(TestCase):
         PC_i, IPOut1_i, IPOut2_i = [Signal(intbv()) for i in range(3)]
         we1_i, we2_i, clk_i = [Signal(bool()) for i in range(3)]
 
-        dut = OutQueue(t_OpCode.MOV, 0, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, clk_i)
+        dut = OutQueue(OpCode=t_OpCode.MOV,Modifier=0, IRA=0, IRB=0, RPA=0, PC=PC_i, IPout1=IPOut1_i, we1=we1_i, IPout2=IPOut2_i, we2=we2_i, clk=clk_i)
         check = test(PC_i, IPOut1_i, we1_i, we2_i, clk_i)
 
         sim = Simulation(dut, check)
@@ -54,10 +54,10 @@ class testOutQueueProperties(TestCase):
                 self.assertEquals(we1, False)
                 self.assertEquals(we2, False)
 
-        RPA_i, PC_i, IPOut1_i, IPOut2_i = [Signal(intbv()) for i in range(4)]
+        RPA_i, PC_i, IPOut1_i, IPOut2_i = [Signal(intbv(0)) for i in range(4)]
         we1_i, we2_i, clk_i = [Signal(bool()) for i in range(3)]
 
-        dut = OutQueue(t_OpCode.DAT, RPA_i, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, clk_i)
+        dut = OutQueue(OpCode=t_OpCode.DAT, Modifier=0, IRA=0, IRB=0, RPA=RPA_i, PC=PC_i, IPout1=IPOut1_i, we1=we1_i, IPout2=IPOut2_i, we2=we2_i, clk=clk_i)
         check = test(RPA_i, PC_i, we1_i, we2_i, clk_i)
 
         sim = Simulation(dut, check)
@@ -81,12 +81,12 @@ class testOutQueueProperties(TestCase):
                 self.assertEquals(we1, True)
                 self.assertEquals(we2, True)
                 self.assertEquals(IPOut1, (pc + 1) % MARSparam.CORESIZE)
-                self.assertEquals(IPOut2, Addr)
+                self.assertEquals(IPOut2, (pc + Addr) % MARSparam.CORESIZE)
 
         RPA_i, PC_i, IPOut1_i, IPOut2_i = [Signal(intbv()) for i in range(4)]
         we1_i, we2_i, clk_i = [Signal(bool()) for i in range(3)]
 
-        dut = OutQueue(t_OpCode.SPL, RPA_i, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, clk_i)
+        dut = OutQueue(OpCode=t_OpCode.SPL, Modifier=0, IRA=0, IRB=0, RPA=RPA_i, PC=PC_i, IPout1=IPOut1_i, we1=we1_i, IPout2=IPOut2_i, we2=we2_i, clk=clk_i)
         check = test(RPA_i, PC_i, IPOut1_i, we1_i,IPOut2_i, we2_i, clk_i)
 
         sim = Simulation(dut, check)

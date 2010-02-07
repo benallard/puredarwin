@@ -10,7 +10,7 @@ class testRAMProperties(TestCase):
     def testReadAfterWrite(self):
         """ What does a Read on a adress we just wrote does ??? """
 
-        def test(we, addr, dout, din, rst_n):
+        def test(we, waddr, raddr, dout, din, rst_n):
 
             mem = {}
 
@@ -26,14 +26,14 @@ class testRAMProperties(TestCase):
                     address = randrange(128)
                     
                     din.next = data
-                    addr.next = address
+                    waddr.next = address
                     mem[address] = data
                     yield delay (20)
                     self.assertEqual(we, True)
 
                 we.next = False
                 for a in iter(mem):
-                    addr.next = a
+                    raddr.next = a
                     yield delay(3)
                     self.assertEqual(dout, mem[a])
             raise StopSimulation
@@ -45,13 +45,14 @@ class testRAMProperties(TestCase):
 
         dout_i = Signal(intbv(0))
         din_i = Signal(intbv(0))
-        addr_i = Signal(intbv(0))
+        raddr_i = Signal(intbv(0))
+        waddr_i = Signal(intbv(0))
         we_i = Signal(bool())
         clk_i = Signal(bool())
         rst_n_i = Signal(bool(True))
 
-        dut = RAM(dout_i, din_i, addr_i, we_i, clk_i, rst_n_i, 8, 128)
-        check = test(we_i, addr_i, dout_i, din_i, we_i)
+        dut = RAM(dout=dout_i, din=din_i, raddr=raddr_i, waddr=waddr_i, we=we_i, clk=clk_i, rst_n=rst_n_i, width=8,depth=128)
+        check = test(we_i, waddr_i, raddr_i, dout_i, din_i, we_i)
         clkdrv = ClkDrv(clk_i)
 
         sim = Simulation(dut, check, clkdrv)
