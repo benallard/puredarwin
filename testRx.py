@@ -143,6 +143,7 @@ class testRx(TestCase):
                     elif ii == nbBits+1:
                         print "parity"
                         Tx.next = (False, True, False, True)[i]
+                        self.assertEquals(ack, False)
                     elif ii == nbBits+2:
                         print "stop !"
                         Tx.next = True

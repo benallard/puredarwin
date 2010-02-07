@@ -97,37 +97,21 @@ def Rx(Rx, data, clk, ack, rst_n, nbBits, baudrate, parity, clkrate):
                 if bitReceived == 0:
                     # start bit
                     pass
-                elif bitReceived == nbBits+1: # parity bit
-                    if parity == t_Parity.NO:
-                        state.next = t_State.WAIT
-                        if Rx: # stop bit
-                            ack.next = True
-                            data.next = data_i
-                            data_i.next = 0
-                        else:
-                            ack.next = False
-                    elif parity == t_Parity.MARK:
-                        if Rx:
-                            parity_ok.next = True
-                        else:
-                            parity_ok.next = False
-                    elif parity == t_Parity.SPACE:
-                        if Rx:
-                            parity_ok.next = False
-                        else:
-                            parity_ok.next = True
-                    else:
-                        if parity_bit == Rx:
-                            parity_ok.next = True
-                        else:
-                            parity_ok.next = False
 
-                elif  bitReceived == nbBits + 2: # stop bit
-                    if parity == t_Parity.NO:
-                        raise Error("Shouldn't be there")
+                elif (bitReceived == nbBits+1) and (parity != t_Parity.NO): # parity bit
+                    if parity == t_Parity.MARK:
+                        parity_ok.next = Rx
+                    elif parity == t_Parity.SPACE:
+                        parity_ok.next = not Rx
+                    else:
+                        parity_ok.next = (parity_bit == Rx)
+
+                elif (((bitReceived == nbBits + 1) and (parity == t_Parity.NO)) or 
+                      ((bitReceived == nbBits + 2) and (parity != t_Parity.NO))):
+                    # stop bit
                     state.next = t_State.WAIT
                     if Rx:
-                        ack.next = parity_ok
+                        ack.next = (parity == t_Parity.NO) or parity_ok
                         data.next = data_i
                         data_i.next = 0
                     else:
@@ -147,6 +131,8 @@ def Tx(Tx, data, clk, req, ack, rst_n, nbBits, baudrate, parity, clkrate):
     sampling_time =  int(clkrate / baudrate)
 
     state = Signal(t_State.WAIT)
+    
+    data_i = Signal(intbv()[nbBits:])
 
     bitSent = Signal(intbv(0, min=0, max=nbBits+4))
     time = Signal(intbv(0,min=0, max=sampling_time+2))
@@ -164,7 +150,7 @@ def Tx(Tx, data, clk, req, ack, rst_n, nbBits, baudrate, parity, clkrate):
                     bitSent.next = 0
                     state.next = t_State.SEND
                     Tx.next = False
-                    time.next = sampling_time // 2
+                    time.next = 0
                     if parity == t_Parity.EVEN:
                         parity_bit.next = True
                     elif parity == t_Parity.ODD:
@@ -184,25 +170,22 @@ def Tx(Tx, data, clk, req, ack, rst_n, nbBits, baudrate, parity, clkrate):
                 if bitSent == 0:
                     # start bit
                     Tx.next = False
-                if bitSent == nbBits+1: # parity bit
-                    if parity == t_Parity.NO:
-                        # stop bit
-                        state.next = t_State.WAIT
-                        Tx.next = True
-                        ack.next = True
-                    elif parity == t_Parity.MARK:
+
+                elif (bitSent == nbBits+1) and (parity != t_Parity.NO): 
+                    # parity bit
+                    if parity == t_Parity.MARK:
                         Tx.next = True
                     elif parity == t_Parity.SPACE:
                         Tx.next = False
                     else:
                         Tx.next = parity_bit
 
-                elif  bitSent == nbBits + 2: # stop bit
-                    if parity == t_Parity.NO:
-                        raise Error("Shouldn't be there")
+                elif  (((bitSent == nbBits+1) and (parity == t_Parity.NO)) or 
+                       ((bitSent == nbBits + 2) and (parity != t_Parity.NO))): 
+                       # stop bit
                     state.next = t_State.WAIT
                     Tx.next = True
-                        ack.next = True
+                    ack.next = True
 
                 else: # usual communication
                     Tx.next = data_i[bitSent - 1]
