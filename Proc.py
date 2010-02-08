@@ -77,8 +77,9 @@ def EvalOp(Mod, Number, Ptr, WData, we, ROfs, RData, clk, rst_n, req, ack):
             else:
                 raise ValueError("Mod: %d not understood" % Mod)
         elif state == t_State.READ:
+            # setting ack works here because our RAM has an asynchronous read bus.
+            ack.next = True
             ROfs.next = Ptr
-            ack.next = True    
         elif state == t_State.IDLE:
             ack.next = False
 

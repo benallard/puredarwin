@@ -179,7 +179,7 @@ def traceBench():
     return dut, test, ReadCore, WriteCore, ReadQueue, WriteQueue
 
 if __name__ == "__main__":
-    init(Paperone=True)
+    init(Gemini=True)
     tb = traceSignals(traceBench)
     sim = Simulation(tb)
     sim.run(quiet=1)
