@@ -25,24 +25,24 @@ def RAM(raddr, dout, waddr, din, we, clk, rst_n, width, depth):
 
     return read, write
 
-def Fold(PC, OffsetIn, AddressOut, limit, maxSize):
+def Fold(PC, Offset, Address, limit, maxSize):
 
-    OfsIn_fold, OfsIn_limit = [Signal(MARSparam.Addr()) for i in range(2)]
+    Ofs_fold, Ofs_limit = [Signal(MARSparam.Addr()) for i in range(2)]
 
     @always_comb
     def comb1():
-        OfsIn_limit.next = OffsetIn % limit
+        Ofs_limit.next = Offset % limit
 
     @always_comb
     def comb2():
-        if (OfsIn_limit) > (limit/2):
-            OfsIn_fold.next = (OfsIn_limit) + maxSize - limit
+        if (Ofs_limit) > (limit/2):
+            Ofs_fold.next = (Ofs_limit) + maxSize - limit
         else:
-            OfsIn_fold.next = OfsIn_limit
+            Ofs_fold.next = Ofs_limit
 
     @always_comb
     def comb3():
-        AddressOut.next = (PC + OfsIn_fold) % maxSize
+        Address.next = (PC + Ofs_fold) % maxSize
 
     return comb1, comb2, comb3
 

@@ -459,7 +459,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
             WOfs.next = BNumber
         elif state == t_State.REST:
             WOfs.next = BPtr
-            # We have here luck as REST is a one shoot process ... 
+            # We are lucky here as REST is a one shoot process ... 
             we1.next = we1_outqueue
             we2.next = we2_outqueue
 
