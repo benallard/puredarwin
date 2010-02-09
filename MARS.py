@@ -17,7 +17,7 @@ def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
     t_State=enum("IDLE", "LOAD", "FETCH", "PROC")
 
     state = Signal(t_State.IDLE)
-    lastWarrior, Warrior = [Signal(intbv(0, min=0, max=nbWarriors)) for i in range(2)]
+    prevWarrior, Warrior = [Signal(intbv(0, min=0, max=nbWarriors)) for i in range(2)]
     Time = Signal(intbv(0, min=0, max=maxTime))
 
     IP1_i, IP1_proc, IP1_load, PC_i, IP2_i, WOfs_i, ROfs = [Signal(Addr(0)) for i in range (7)]
@@ -44,23 +44,29 @@ def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
             elif state == t_State.LOAD:
                 req_load.next = False
 
+                # Here, we should do something about incrementing Warrior
+
                 if Warrior + 1 == nbWarriors:
                     if ack_load:
                         state.next = t_State.FETCH
 
             elif state == t_State.FETCH:
 
+                # Increment the Current Warrior
                 if Warrior + 1 == nbWarriors:
+                    # We rounded: Increment the time, and start from 0 again
                     Warrior.next = 0
                     Time.next = Time + 1
                 else:
                     Warrior.next = Warrior + 1
 
-                if Warrior.next == lastWarrior:
-                    Winner.next = lastWarrior
+                if Warrior.next == prevWarrior:
+                    # Only one Warrior left, he won !
+                    Winner.next = prevWarrior
                     state.next = t_State.IDLE
                     ack.next = True
                 elif not empty_i:
+                    # Current Warrior still has Task(s)
                     draw.next = False
                     state.next = t_State.PROC
                     Instr_i.next = RData
@@ -81,16 +87,9 @@ def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
         if state == t_State.IDLE:
             pass
         elif state == t_State.FETCH:
-            lastWarrior.next = Warrior
+            prevWarrior.next = Warrior
         elif state == t_State.PROC:
             pass
-
-    Proc_i = Proc(Instr=Instr_i, PC=PC_i, IPOut1=IP1_proc, we1=we1_proc, IPOut2=IP2_i, we2=we2_i, WOfs=WOfs_i, WData=Dout_proc, we=we_i, ROfs=ROfs, RData=RData_i, clk=clk, rst_n=rst_n, req=req_proc, ack=ack_proc)
-
-    Loader_i = Loader(RX_load, Warrior, we1_load, Dout_load, we1_load, IP1_load, clk, rst_n, req_load, ack_load, 9600)
-    Core_i = Core(pc=PC_i, WOfs=WOfs_i, din=WData_i, ROfs=ROfs, dout=RData_i, we=we_i, clk=clk, rst_n=rst_n, maxSize=CORESIZE)
-
-    Queue_i = TaskQueue(Warrior=Warrior,IPin1=IP1_i, IPin2=IP2_i, IPout=PC_i, re=re_i, we1=we1_i, we2=we2_i, empty=empty_i, clk=clk, rst_n=rst_n, maxWarriors=nbWarriors)
 
     @always_comb
     def updateval():
@@ -99,8 +98,15 @@ def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
         we1_i.next = we1_proc
         WData_i.next = Dout_proc
         if state == t_State.LOAD:
-            we1_i.next = we1_load
             IP1_i.next = IP1_load
+            we1_i.next = we1_load
             WData_i.next = Dout_load
+
+    Proc_i = Proc(Instr=Instr_i, PC=PC_i, IPOut1=IP1_proc, we1=we1_proc, IPOut2=IP2_i, we2=we2_i, WOfs=WOfs_i, WData=Dout_proc, we=we_i, ROfs=ROfs, RData=RData_i, clk=clk, rst_n=rst_n, req=req_proc, ack=ack_proc)
+
+    Loader_i = Loader(RX_load, Warrior, we1_load, Dout_load, we1_load, IP1_load, clk, rst_n, req_load, ack_load, 9600)
+    Core_i = Core(pc=PC_i, WOfs=WOfs_i, din=WData_i, ROfs=ROfs, dout=RData_i, we=we_i, clk=clk, rst_n=rst_n, maxSize=CORESIZE)
+
+    Queue_i = TaskQueue(Warrior=Warrior,IPin1=IP1_i, IPin2=IP2_i, IPout=PC_i, re=re_i, we1=we1_i, we2=we2_i, empty=empty_i, clk=clk, rst_n=rst_n, maxWarriors=nbWarriors)
      
     return Proc_i, Loader_i, Core_i, Queue_i, fsm, ctrl, updateval
