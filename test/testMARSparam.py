@@ -19,8 +19,8 @@ class testMARSparamProperties(unittest.TestCase):
 
         Instruction = myhdl.Signal(MARSparam.Instr())
         self.assert_(isinstance(Instruction._val, myhdl.intbv))
-        self.assertEquals(str(type(Instruction)), "<class 'myhdl._Signal._Signal'>")
-        self.assertEquals(str(type(Instruction.val)), "<class 'MARSparam.Instr'>")
+        self.assert_(isinstance(Instruction, myhdl._Signal.Signal))
+        self.assert_(isinstance(Instruction.val, MARSparam.Instr))
         self.assertEquals(len(Instruction), MARSparam.InstrWidth)
         for i in range(len(Instruction)):
             self.assertEquals(Instruction[i], 0)
