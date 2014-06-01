@@ -5,12 +5,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from myhdl import *
 
-import MARSparam
-from MARSparam import *
+from puredarwin import MARSparam
+from puredarwin.MARSparam import *
 
 from random import randrange
 
-from Proc import Proc
+from puredarwin.Proc import Proc
 
 InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
 
@@ -19,7 +19,7 @@ Core = {}
 Queue = []
 
 def init(Imp=False, Dwarf=False, Gemini=False, Mice=False, Paperone=False, Offset=0, Start=0):
-    
+
     if Imp:
         Core[Offset] = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
     if Dwarf:
@@ -57,12 +57,12 @@ def init(Imp=False, Dwarf=False, Gemini=False, Mice=False, Paperone=False, Offse
         Core[Offset + 7] = Instr(t_OpCode.ADD, t_Modifier.A, t_Mode.IMMEDIATE, Addr(50), t_Mode.DIRECT, Addr(-4))
         Core[Offset + 8] = Instr(t_OpCode.JMP, t_Modifier.B, t_Mode.DIRECT, Addr(-5), t_Mode.B_DECREMENT, Addr(-5))
         Core[Offset + 9] = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.B_INCREMENT, Addr(2667), t_Mode.B_INCREMENT, Addr(-2666))
-        
+
 
     Queue.insert(0, Offset + Start)
 
 def traceBench():
-    """ How does the proc reacts to a basic IMP """  
+    """ How does the proc reacts to a basic IMP """
 
     @instance
     def WriteCore():
@@ -161,7 +161,7 @@ def traceBench():
 
             clk_i.next = True
             yield delay(5)
-            
+
             while not ack_i:
                 clk_i.next = False
                 yield delay(5)
@@ -171,7 +171,7 @@ def traceBench():
                 yield delay(5)
 
         raise StopSimulation
-    
+
     PC_i, IPOut1_i, IPOut2_i, WOfs_i, ROfs_i = [Signal(Addr()) for i in range (5)]
     we1_i, we2_i, clk_i, rst_n_i, req_i, ack_i, re_i = [Signal(bool()) for i in range(7)]
     Instr_i = Signal(Instr())
@@ -179,7 +179,7 @@ def traceBench():
     we_i = Signal(intbv(0))
 
     dut = Proc(Instr_i, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, WOfs_i, WData_i, we_i, ROfs_i, RData_i, clk_i, rst_n_i, req_i, ack_i)
-     
+
     return dut, test, ReadCore, WriteCore, ReadQueue, WriteQueue
 
 if __name__ == "__main__":

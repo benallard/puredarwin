@@ -1,8 +1,8 @@
 from myhdl import *
 
-from Task import TaskQueue
+from puredarwin.Task import TaskQueue
 
-import MARSparam
+from puredarwin import MARSparam
 
 def tracebench(nbwarriors):
 

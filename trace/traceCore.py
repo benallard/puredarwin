@@ -1,9 +1,9 @@
 from random import randrange
 from myhdl import *
 
-from Core import Core
+from puredarwin.Core import Core
 
-import MARSparam
+from puredarwin import MARSparam
 
 def tracebench():
 
