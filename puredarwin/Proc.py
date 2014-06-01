@@ -309,7 +309,7 @@ def OutCore(OpCode, Modifier, IRA, IRB, we, WData, clk):
                                              BNumber=IRA.BNumber)
                 we.next = MARSparam.we.F
             elif Modifier == t_Modifier.X:
-                WData.next = MARSparam.Instr(ANumber=IRA.Bnumber, 
+                WData.next = MARSparam.Instr(ANumber=IRA.Bnumber,
                                              BNumber=IRA.ANumber)
                 we.next = MARSparam.we.X
             elif Modifier == t_Modifier.I:
@@ -333,7 +333,7 @@ def OutCore(OpCode, Modifier, IRA, IRB, we, WData, clk):
             elif Modifier == t_Modifier.BA:
                 WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.BNumber))
                 we.next = MARSparam.we.BA
-            elif Modifier in (t_Modifier.F, 
+            elif Modifier in (t_Modifier.F,
                            t_Modifier.I):
                 WData.next = MARSparam.Instr(ANumber = op(OpCode, IRB.ANumber, IRA.ANumber),
                                              BNumber = op(OpCode, IRB.BNumber, IRA.BNumber))
@@ -346,7 +346,7 @@ def OutCore(OpCode, Modifier, IRA, IRB, we, WData, clk):
                 raise ValueError(Modifier)
 
         elif OpCode == t_OpCode.DJN:
-            if Modifier in (t_Modifier.A, 
+            if Modifier in (t_Modifier.A,
                             t_Modifier.BA):
                 Num = (IRB.ANumber + MARSparam.CORESIZE - 1) % MARSparam.CORESIZE
                 WData.next = MARSparam.Instr(ANumber=Num)
@@ -376,7 +376,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
     """
     We have here  three state fsm: EvalA, EvalB, The rest
     Thus we have state, thus, we need a rst(_n)
-    
+
     """
 
     t_State = enum("IDLE", "EVALOPA", "EVALOPB", "REST")
@@ -397,7 +397,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
     WData_evalopa, WData_evalopb, WData_outcore = [Signal(intbv(0)[MARSparam.InstrWidth:]) for i in range(3)]
 
     we_evalopa, we_evalopb, we_outcore = [Signal(intbv(0)[6:]) for i in range(3)]
-    
+
     req_evalopa, ack_evalopa, req_evalopb, ack_evalopb = [Signal(bool()) for i in range(4)]
 
     we1_outqueue, we2_outqueue = [Signal(bool()) for i in range(2)]
@@ -428,8 +428,8 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
                 if req:
                     state.next = t_State.EVALOPA
             elif state == t_State.EVALOPA:
-                # we could jump to REST if evalopa and evalopb 
-                # both don't write and if B is not dependant 
+                # we could jump to REST if evalopa and evalopb
+                # both don't write and if B is not dependant
                 # on A's output
                 if ack_evalopa:
                     state.next = t_State.EVALOPB
@@ -442,7 +442,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
                 ack.next = True
             else:
                 raise ValueError("state value not allowed: %s" % state)
-            
+
     @always(state)
     def fsmcore():
         """
@@ -460,7 +460,7 @@ def Proc(Instr, PC, IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs, RData, clk,
             WOfs.next = BNumber
         elif state == t_State.REST:
             WOfs.next = BPtr
-            # We are lucky here as REST is a one shoot process ... 
+            # We are lucky here as REST is a one shoot process ...
             we1.next = we1_outqueue
             we2.next = we2_outqueue
 

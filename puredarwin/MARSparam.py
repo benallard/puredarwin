@@ -18,6 +18,7 @@ ReadRange = 400
 WriteRange = 400
 
 class we:
+    WIDTH = 6
     OpCode = intbv("100000")
     Modif  = intbv("010000")
     AMod   = intbv("001000")
@@ -34,13 +35,17 @@ class we:
     I      = Full
 
 class t_OpCode:
+    # The mapping to number is free to us.\
+    ### EXCEPT for 'DAT' !
     DAT, MOV, ADD, SUB, MUL, DIV, MOD, JMP, JMZ, JMN, DJN, CMP, SNE, SLT, SPL, NOP = [intbv(i)[5:] for i in range(16)]
     SEQ = CMP
 
 class t_Modifier:
+    # The mapping into number is also free.
     A, B, AB, BA, F, X, I = [intbv(i)[3:] for i in range(7)]
 
 class t_Mode:
+    # Same here about the mapping.
     IMMEDIATE, DIRECT, A_INDIRECT, A_DECREMENT, A_INCREMENT, B_INDIRECT, B_DECREMENT, B_INCREMENT = [intbv(i)[3:] for i in range(8)]
 
 
@@ -78,20 +83,21 @@ class Addr(intbv):
 
 class Instr(intbv):
     def __init__(self, OpCode=None, Modifier=None, AMode=None, ANumber=None, BMode=None, BNumber=None, val=None):
-        if not val:
+        if val is None:
             val = 0
         intbv.__init__(self, val, _nrbits=InstrWidth)
-        if OpCode:
+        if OpCode is not None:
             self[InstrWidth:InstrWidth-5] = OpCode
-        if Modifier:
+        if Modifier is not None:
+            print Modifier
             self[InstrWidth-5:InstrWidth-8] = Modifier
-        if AMode:
+        if AMode is not None:
             self[InstrWidth-8:InstrWidth-11] = AMode
-        if ANumber:
+        if ANumber is not None:
             self[InstrWidth-11:InstrWidth-11-AddrWidth] = ANumber
-        if BMode:
+        if BMode is not None:
             self[AddrWidth+3:AddrWidth] = BMode
-        if BNumber:
+        if BNumber is not None:
             self[AddrWidth:] = BNumber
 
     def __getattr__(self, name):
@@ -134,3 +140,6 @@ class Instr(intbv):
 
     def __deepcopy__(self, visit):
         return Instr(val=self)
+
+
+InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())

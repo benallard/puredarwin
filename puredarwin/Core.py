@@ -7,11 +7,11 @@ This is the central memory storage for the Warriors, the "Hill"
 from myhdl import *
 
 import MARSparam
-from MARSparam import InstrWidth
+from MARSparam import InstrWidth, AddrWidth
 
 def RAM(raddr, dout, waddr, din, we, clk, rst_n, width, depth):
     """ Basic RAM model """
-    
+
     mem = [Signal(intbv(0)[width:]) for i in range(depth)]
 
     @always(clk.posedge)
@@ -35,7 +35,7 @@ def Fold(PC, Offset, Address, limit, maxSize):
 
     @always_comb
     def comb2():
-        if (Ofs_limit) > (limit/2):
+        if (Ofs_limit) > (limit//2):
             Ofs_fold.next = (Ofs_limit) + maxSize - limit
         else:
             Ofs_fold.next = Ofs_limit
@@ -56,16 +56,16 @@ def Core(pc, WOfs, din, ROfs, dout, we, clk, rst_n, maxSize):
     opcode_out = Signal(intbv(0)[5:])
     modif_out = Signal(intbv(0)[3:])
     amode_out = Signal(intbv(0)[3:])
-    anumber_out = Signal(intbv(0)[MARSparam.AddrWidth:])
+    anumber_out = Signal(intbv(0)[AddrWidth:])
     bmode_out = Signal(intbv(0)[3:])
-    bnumber_out = Signal(intbv(0)[MARSparam.AddrWidth:])
+    bnumber_out = Signal(intbv(0)[AddrWidth:])
 
     opcode_in = Signal(intbv(0)[5:])
     modif_in = Signal(intbv(0)[3:])
     amode_in = Signal(intbv(0)[3:])
-    anumber_in = Signal(intbv(0)[MARSparam.AddrWidth:])
+    anumber_in = Signal(intbv(0)[AddrWidth:])
     bmode_in = Signal(intbv(0)[3:])
-    bnumber_in = Signal(intbv(0)[MARSparam.AddrWidth:])
+    bnumber_in = Signal(intbv(0)[AddrWidth:])
 
     # Those are VHDL Aliases
     @always_comb
@@ -79,14 +79,14 @@ def Core(pc, WOfs, din, ROfs, dout, we, clk, rst_n, maxSize):
         amode_in.next = din[InstrWidth-8:InstrWidth-11]
         dout.next[InstrWidth-8:InstrWidth-11] = amode_out
 
-        anumber_in.next = din[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth]
-        dout.next[InstrWidth-11:InstrWidth-11-MARSparam.AddrWidth] = anumber_out
+        anumber_in.next = din[InstrWidth-11:InstrWidth-11-AddrWidth]
+        dout.next[InstrWidth-11:InstrWidth-11-AddrWidth] = anumber_out
 
-        bmode_in.next = din[MARSparam.AddrWidth+3:MARSparam.AddrWidth]
-        dout.next[MARSparam.AddrWidth+3:MARSparam.AddrWidth] = bmode_out
+        bmode_in.next = din[AddrWidth+3:AddrWidth]
+        dout.next[AddrWidth+3:AddrWidth] = bmode_out
 
-        bnumber_in.next = din[MARSparam.AddrWidth:0]
-        dout.next[MARSparam.AddrWidth:0] = bnumber_out
+        bnumber_in.next = din[AddrWidth:0]
+        dout.next[AddrWidth:0] = bnumber_out
 
         opcode_we.next = we[5]
         modif_we.next = we[4]

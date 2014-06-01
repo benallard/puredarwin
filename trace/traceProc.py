@@ -12,8 +12,6 @@ from random import randrange
 
 from puredarwin.Proc import Proc
 
-InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
-
 
 Core = {}
 Queue = []
@@ -176,7 +174,7 @@ def traceBench():
     we1_i, we2_i, clk_i, rst_n_i, req_i, ack_i, re_i = [Signal(bool()) for i in range(7)]
     Instr_i = Signal(Instr())
     WData_i, RData_i = [Signal(intbv(InstrEmpty)) for i in range (2)]
-    we_i = Signal(intbv(0))
+    we_i = Signal(intbv(0)[MARSparam.we.WIDTH:])
 
     dut = Proc(Instr_i, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, WOfs_i, WData_i, we_i, ROfs_i, RData_i, clk_i, rst_n_i, req_i, ack_i)
 

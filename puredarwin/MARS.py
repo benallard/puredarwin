@@ -9,10 +9,8 @@ from Core import Core
 from Task import TaskQueue
 from Loader import Loader
 
-InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
-
 def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
-    """ MARS is the reunion of the modules """  
+    """ MARS is the reunion of the modules """
 
     t_State=enum("IDLE", "LOAD", "FETCH", "PROC")
 
@@ -30,7 +28,7 @@ def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
     def fsm():
         if not rst_n:
             state.next = t_State.IDLE
-            ack.next = 0 
+            ack.next = 0
             Warrior.next = 0
             draw.next = True
         elif clk:
@@ -81,7 +79,7 @@ def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
                         state.next = IDLE
                         draw.next = True
                         ack.next = True
-                        
+
     @always(state)
     def ctrl():
         if state == t_State.IDLE:
@@ -108,5 +106,5 @@ def MARS(clk, rst_n, req, ack, RX_load, draw, Winner, nbWarriors, maxTime):
     Core_i = Core(pc=PC_i, WOfs=WOfs_i, din=WData_i, ROfs=ROfs, dout=RData_i, we=we_i, clk=clk, rst_n=rst_n, maxSize=CORESIZE)
 
     Queue_i = TaskQueue(Warrior=Warrior,IPin1=IP1_i, IPin2=IP2_i, IPout=PC_i, re=re_i, we1=we1_i, we2=we2_i, empty=empty_i, clk=clk, rst_n=rst_n, maxWarriors=nbWarriors)
-     
+
     return Proc_i, Loader_i, Core_i, Queue_i, fsm, ctrl, updateval
