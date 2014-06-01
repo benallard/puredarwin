@@ -3,7 +3,7 @@ from myhdl import *
 import unittest
 from unittest import TestCase
 
-from Loader import RNG
+from puredarwin.Loader import RNG
 
 class testRNG(TestCase):
 

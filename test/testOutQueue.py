@@ -5,10 +5,10 @@ from random import randrange
 
 from myhdl import *
 
-from Proc import OutQueue
+from puredarwin.Proc import OutQueue
 
-import MARSparam
-from MARSparam import t_OpCode, t_Modifier
+from puredarwin import MARSparam
+from puredarwin.MARSparam import t_OpCode, t_Modifier
 
 class testOutQueueProperties(TestCase):
 

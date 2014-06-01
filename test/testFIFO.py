@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from myhdl import Signal, intbv, Simulation, delay
 
-from Task import FIFO
+from puredarwin.Task import FIFO
 
 class TestFIFOProperties(TestCase):
 
@@ -37,14 +37,14 @@ class TestFIFOProperties(TestCase):
                     yield delay(2)
                     rst_n.next = True
                     yield delay(1)
-                
+
                 self.assertEqual(empty, i in (0, 6, 7))
                 clk.next = True
                 yield delay(10) #posedge
                 self.assertEqual(empty, i == 5)
 
             re.next = False;
-           
+
         dout_i = Signal(intbv())
         din_i = Signal(intbv())
         re_i = Signal(bool(False))
@@ -59,7 +59,7 @@ class TestFIFOProperties(TestCase):
 
     def testNoWriteAtOverflow(self):
         """ test that further writing has no effect when full """
-        
+
         def test(dout, din, re, we, empty, clk, rst_n):
             rst_n.next = False
             yield delay(2)
@@ -80,8 +80,8 @@ class TestFIFOProperties(TestCase):
             self.assertEqual(empty, True)
             re.next = False
             we.next = False
-            
-           
+
+
         dout_i = Signal(intbv())
         din_i = Signal(intbv())
         re_i = Signal(bool(False))
@@ -96,7 +96,7 @@ class TestFIFOProperties(TestCase):
 
     def testReadWhatWeWrote(self):
         """ test were we actually check that the FIFO does not manipulate data """
-        
+
         def test(dout, din, re, we, empty, clk, rst_n):
             rst_n.next = False
             yield delay(2)
@@ -116,8 +116,8 @@ class TestFIFOProperties(TestCase):
                 self.assertEqual(dout, (None,11,22,33,33,44,44,55, 77, 77)[i])
             re.next = False
             we.next = False
-            
-           
+
+
         dout_i = Signal(intbv())
         din_i = Signal(intbv())
         re_i = Signal(bool(False))

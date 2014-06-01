@@ -2,7 +2,7 @@ from myhdl import *
 
 from random import randrange
 
-from Loader import Tx, t_Parity
+from puredarwin.Loader import Tx, t_Parity
 
 import unittest
 from unittest import TestCase
@@ -17,7 +17,7 @@ class testTx(TestCase):
 
         clkPeriod = 10 # ns
         period = int (1e9 / 115200) # 115200 baud
-        
+
         def clkDrv(clk):
             while True:
                 yield delay(clkPeriod // 2)

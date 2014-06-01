@@ -2,10 +2,10 @@ import unittest
 
 from myhdl import *
 
-import MARSparam
-from MARSparam import *
+from puredarwin.Proc import Proc
 
-from Proc import Proc
+from puredarwin import MARSparam
+from puredarwin.MARSparam import *
 
 InstrEmpty = Instr(t_OpCode.DAT, t_Modifier.F, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr())
 InstrIMP   = Instr(t_OpCode.MOV, t_Modifier.I, t_Mode.DIRECT, Addr(), t_Mode.DIRECT, Addr(1))
@@ -14,7 +14,7 @@ class testProcBasic(unittest.TestCase):
 
     def testIMP(self):
         """ How does the proc reacts to a basic IMP """
-        
+
         Core = {}
         if True: # IMP
             Core[CORESIZE-100] = InstrIMP
@@ -63,7 +63,7 @@ class testProcBasic(unittest.TestCase):
             for i in range (200):
                 clk.next = False
                 yield delay(5)
-                # set 
+                # set
                 re.next = True
                 req.next = True
 
@@ -78,13 +78,13 @@ class testProcBasic(unittest.TestCase):
                     # EvalOpA processed
 
                     print "Inter: %s %s %s %s %s %s %s %s" % (IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs)
-                
+
                     clk.next = True
                     yield delay(5)
 
-                
+
                 print "Final: %s %s %s %s %s %s %s %s" % (IPOut1, we1, IPOut2, we2, WOfs, WData, we, ROfs)
-                
+
                 # check
                 self.assertEquals(IPOut1, (PC + 1) % CORESIZE)
                 self.assertEquals(we1, False)
@@ -103,7 +103,7 @@ class testProcBasic(unittest.TestCase):
 
             dut = Proc(Instr, PC_i, IPOut1_i, we1_i, IPOut2_i, we2_i, WOfs_i, WData_i, we_i, ROfs_i, RData_i,  clk_i, rst_n_i, req_i, ack_i)
             check = test(PC_i, re_i, IPOut1_i, we1_i, IPOut2_i, we2_i, WOfs_i, WData_i, we_i, ROfs_i, RData_i, clk_i, rst_n_i, req_i, ack_i)
-     
+
             writeC = WriteCore(we_i, WOfs_i, PC_i, WData_i, clk_i)
             readC = ReadCore(ROfs_i, PC_i, RData_i)
 

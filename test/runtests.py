@@ -3,9 +3,9 @@ import unittest
 import sys
 
 
-sys.path.append(os.path.join(
+sys.path.append(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    'puredarwin'))
+)
 
 """ Greatly imspired from Dive into Python chap. 16.7 """
 

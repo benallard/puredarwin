@@ -2,7 +2,7 @@ import unittest
 
 import myhdl
 
-import MARSparam
+from puredarwin import MARSparam
 
 class testMARSparamProperties(unittest.TestCase):
 

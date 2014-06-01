@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from myhdl import Signal, intbv, Simulation, delay, traceSignals
 
-from Task import TaskQueue
+from puredarwin.Task import TaskQueue
 
 class testTaskQueueProperties(TestCase):
 

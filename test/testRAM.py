@@ -3,7 +3,7 @@ from unittest import TestCase
 from random import randrange
 from myhdl import Signal, intbv, Simulation, delay, StopSimulation
 
-from Core import RAM
+from puredarwin.Core import RAM
 
 class testRAMProperties(TestCase):
 
@@ -18,13 +18,13 @@ class testRAMProperties(TestCase):
             yield delay(2)
             rst_n.next = True
             yield delay(1)
-            
+
             for p in range (25):
                 we.next = True
                 for i in range(10):
                     data = randrange(2**8)
                     address = randrange(128)
-                    
+
                     din.next = data
                     waddr.next = address
                     mem[address] = data
@@ -37,7 +37,7 @@ class testRAMProperties(TestCase):
                     yield delay(3)
                     self.assertEqual(dout, mem[a])
             raise StopSimulation
-            
+
         def ClkDrv(clk):
             while True:
                 clk.next = not clk

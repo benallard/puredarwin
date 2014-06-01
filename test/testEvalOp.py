@@ -4,10 +4,12 @@ from random import randrange
 
 from myhdl import Signal, intbv, Simulation, delay, traceSignals, StopSimulation
 
-from Proc import EvalOp
+from puredarwin.Proc import EvalOp
 
-import MARSparam
-from MARSparam import InstrWidth
+from puredarwin import MARSparam
+from puredarwin.MARSparam import InstrWidth
+
+
 class testEvalOpProperties(TestCase):
 
     def testAll(self):

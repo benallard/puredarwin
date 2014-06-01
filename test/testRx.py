@@ -2,7 +2,7 @@ from myhdl import *
 
 from random import randrange
 
-from Loader import Rx, t_Parity
+from puredarwin.Loader import Rx, t_Parity
 
 import unittest
 from unittest import TestCase
@@ -44,7 +44,7 @@ class testRx(TestCase):
                 self.assertEquals(ack, True)
                 self.assertEquals(data, totransmit)
             raise StopSimulation
-                    
+
         Rx_i, ack_i, clk_i = [Signal(bool()) for i in range(3)]
         data_i = Signal(intbv()[4:])
 
@@ -53,7 +53,7 @@ class testRx(TestCase):
         dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i, rst_n=rst_n_i, nbBits=4, baudrate=9600000, parity=t_Parity.NO, clkrate=1e9/clkPeriod)
         check = test(Rx_i, data_i, ack_i, 4)
         clock = clkDrv(clk_i)
-        
+
         sim = Simulation(dut, check, clock)
         sim.run(quiet=1)
 
@@ -102,7 +102,7 @@ class testRx(TestCase):
                 self.assertEquals(ack, True)
                 self.assertEquals(data, totransmit)
             raise StopSimulation
-                    
+
         Rx_i, ack_i, clk_i = [Signal(bool()) for i in range(3)]
         data_i = Signal(intbv()[nbBits:])
 
@@ -111,7 +111,7 @@ class testRx(TestCase):
         dut = Rx(Rx=Rx_i, data=data_i, clk = clk_i, ack = ack_i,rst_n = rst_n_i, nbBits=nbBits, baudrate=baudrate, parity=t_Parity.ODD, clkrate=1e9/clkPeriod)
         check = test(Rx_i, data_i, ack_i, nbBits)
         clock = clkDrv(clk_i)
-        
+
         sim = Simulation(dut, check, clock)
         sim.run(quiet=1)
 
@@ -170,4 +170,3 @@ class testRx(TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-        

@@ -4,9 +4,9 @@ from random import randrange
 
 from myhdl import Signal, intbv, Simulation, delay, traceSignals, StopSimulation
 
-from Core import Core
+from puredarwin.Core import Core
 
-import MARSparam
+from puredarwin import MARSparam
 
 class testCoreProperties(TestCase):
 

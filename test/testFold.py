@@ -4,9 +4,9 @@ from random import randrange
 
 from myhdl import Signal, intbv, Simulation, delay, traceSignals, StopSimulation
 
-from Core import Fold
+from puredarwin.Core import Fold
 
-import MARSparam
+from puredarwin import MARSparam
 
 class testFoldProperties(TestCase):
 
