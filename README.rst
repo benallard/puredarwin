@@ -30,3 +30,9 @@ CoreWar:
 Hardware:
    Our goal here is to achieve a silicon running CoreWar game engine.
 
+.. note::
+
+   This is not the only project pursuing this goal, you might also
+   be interested in the `Memory Array Redcode Computer`_.
+
+   .. _`Memory Array Redcode Computer`: https://github.com/treeman/MARC
