@@ -2,7 +2,7 @@
 import unittest
 from unittest import TestCase
 
-from myhdl import Signal, intbv, Simulation, delay, traceSignals
+from myhdl import Signal, ResetSignal, intbv, Simulation, delay, traceSignals
 
 from puredarwin.Task import TaskQueue
 
@@ -27,7 +27,7 @@ class testTaskQueueProperties(TestCase):
                 self.assertEqual(empty, (True, True)[i])
 
             for i in range(10):
-                print "(%d : %d)" % (i, w)
+                print("(%d : %d)" % (i, w))
                 clk.next = False
                 yield delay(10)
 
@@ -52,7 +52,7 @@ class testTaskQueueProperties(TestCase):
         we1_i, we2_i = [Signal(bool()) for i in range(2)]
         empty_i = Signal(bool())
         clk_i = Signal(bool())
-        rst_n_i = Signal(bool())
+        rst_n_i = ResetSignal(bool(), active=0, async=True)
 
         dut = TaskQueue(Warrior=Warrior_i,
                         IPin1=IPin1_i,
@@ -75,7 +75,7 @@ class testTaskQueueProperties(TestCase):
         def test(IPin1, IPin2, we1, we2, re, IPout, clk):
 
              for i in range(13):
-                print "(%d)" % (i)
+                print("(%d)" % (i))
                 clk.next = False
                 yield delay(10)
 
@@ -91,7 +91,7 @@ class testTaskQueueProperties(TestCase):
                 yield delay(10)
 
                 # testsomething
-                self.assertEqual(IPout, (0, 11, 7, 22, 14, 33, 44, 88, 56, 99,110,70,121)[i])
+                self.assertEqual(IPout, (0, 11, 7, 22, 14, 33, 44, 28, 56, 99,110,70,121)[i])
 
         Warrior_i = Signal(intbv(0))
         IPin1_i, IPin2_i = [Signal(intbv()) for i in range(2)]
@@ -100,7 +100,7 @@ class testTaskQueueProperties(TestCase):
         we1_i, we2_i = [Signal(bool()) for i in range(2)]
         empty_i = Signal(bool())
         clk_i = Signal(bool())
-        rst_n_i = Signal(bool(True))
+        rst_n_i = ResetSignal(bool(True), active=0, async=True)
 
         dut = TaskQueue(Warrior=Warrior_i,
                         IPin1=IPin1_i,

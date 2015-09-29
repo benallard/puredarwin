@@ -4,34 +4,60 @@ This is the Task Queue of the MARS
 
 from myhdl import *
 
-import MARSparam
+from . import MARSparam
+
 
 def FIFO(dout, din1, we1, din2, we2, re, empty, clk, rst_n, maxFilling, ID = None):
-    """ Fifo that fits our need: without full flag """
+    """ Fifo that fits our need: without external full flag
+    """
 
-    content = []
+    content = [Signal(intbv(0)[MARSparam.AddrWidth:]) for i in range(maxFilling)]
+    bottom = Signal(modbv(maxFilling, min=0, max=maxFilling))
+    currentFilling = Signal(intbv(0, min=0, max=maxFilling+1))
 
-    @always(clk.posedge, rst_n.negedge)
-    def access():
-        if rst_n == False:
-            del content[:] # that one is tricky ...
-        elif clk == True:
-            if ID != None:
-                print "FIFO::%d (%d) we1:%s we2:%s re:%s " % (ID, len(content), we1, we2, re)
-            if we1:
-                if (len(content) < maxFilling):
-                    content.insert(0, din1.val)
-            if we2:
-                if not we1:
-                    raise ValueError("Writing to second channel when First one not used")
-                if (len(content) < maxFilling):
-                    content.insert(0, din2.val)
+    @always(clk.posedge)
+    def display():
+        if ID is not None:
+            print("FIFO::%d (%d/%d) we1:%s we2:%s re:%s " % (ID, currentFilling, maxFilling, we1, we2, re))
+            if len(content) < 10: print(content, bottom)
 
-            if re:
-                dout.next = content.pop()
-        empty.next = (len(content) == 0)
+    @always_seq(clk.posedge, reset=rst_n)
+    def write():
+        free = maxFilling - currentFilling + int(re)
+        if we1 and we2:
+            # Need to add 2 elements
+            if free >= 1:
+                content[modbv(bottom + currentFilling, min=0, max=maxFilling)].next = din1
+            if free >= 2:
+                content[modbv(bottom + currentFilling + 1, min=0, max=maxFilling)].next = din2
+        elif we1:
+            # Need to add only one element
+            if free >= 1:
+                content[modbv(bottom + currentFilling, min=0, max=maxFilling)].next = din1
+        elif we2 and not we1:
+            raise ValueError("Writing to second channel when First one not used")
 
-    return access
+    @always_seq(clk.posedge, reset=rst_n)
+    def filling():
+        free = maxFilling - currentFilling
+        needed = int(we1) + int(we2)
+
+        if free < needed:
+            currentFilling.next = currentFilling + free - int(re)
+        else:
+            currentFilling.next = currentFilling + needed - int(re)
+
+    @always_seq(clk.posedge, reset=rst_n)
+    def read():
+        if re: # and (currentFilling > 0):  # Shouldn't be necessary as we don't empty empty FIFOS
+            dout.next = content[bottom]
+            bottom.next = bottom + 1
+
+    @always_comb
+    def comb():
+        empty.next = currentFilling == 0
+
+    return display, write, read, comb, filling
 
 def TaskQueue(Warrior, IPin1, IPin2, IPout, re, we1, we2, empty, clk, rst_n, maxWarriors, maxFilling=MARSparam.MAXPROCESSES):
     
