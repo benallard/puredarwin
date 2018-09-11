@@ -10,7 +10,7 @@ PureDarwin
 :doc: http://puredarwin.readthedocs.org/
 :source: https://bitbucket.org/benallard/puredarwin
 :contact: me
-:language used: MyHDL_ (Python)
+:language used: MyHDL_ (Python), Verilog (rewrite attempt)
 
 .. _MyHDL: http://myhdl.org
 
