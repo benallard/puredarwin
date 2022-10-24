@@ -8,7 +8,7 @@ PureDarwin
    .. _puredarwin: http://www.puredarwin.org/
 
 :doc: http://puredarwin.readthedocs.org/
-:source: https://bitbucket.org/benallard/puredarwin
+:source: https://github.com/benallard/puredarwin
 :contact: me
 :language used: MyHDL_ (Python), Verilog (rewrite attempt)
 
